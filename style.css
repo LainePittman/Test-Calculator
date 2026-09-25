@@ -1,0 +1,101 @@
+:root {
+  --bg: #000;
+  --text: #fff;
+  --muted: #8e8e93;
+  --key: #333;
+  --key-active: #737373;
+  --fn: #a5a5a5;
+  --fn-text: #000;
+  --fn-active: #d9d9d9;
+  --op: #ff9f0a;
+  --op-active: #fcc78d;
+  --gap: 12px;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.calculator {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 100dvh;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: env(safe-area-inset-top) calc(16px + env(safe-area-inset-right))
+           calc(20px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+}
+
+.display {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-end;
+  padding: 0 8px 12px;
+  overflow: hidden;
+}
+
+.expression {
+  min-height: 1.5em;
+  font-size: 1.4rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.result {
+  font-size: 5.5rem;
+  font-weight: 300;
+  line-height: 1.1;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.keys {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--gap);
+}
+
+.key {
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 999px;
+  background: var(--key);
+  color: var(--text);
+  font: inherit;
+  font-size: 2rem;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color 0.15s;
+}
+.key:active { background: var(--key-active); transition: none; }
+
+.key.fn { background: var(--fn); color: var(--fn-text); font-size: 1.6rem; }
+.key.fn:active { background: var(--fn-active); }
+
+.key.op { background: var(--op); font-size: 2.3rem; }
+.key.op:active { background: var(--op-active); }
+.key.op.selected { background: var(--text); color: var(--op); }
+
+.key.zero {
+  grid-column: span 2;
+  aspect-ratio: auto;
+  text-align: left;
+  padding-left: 12%;
+}
+
+@media (max-height: 600px) {
+  .result { font-size: 3.5rem; }
+  .key { aspect-ratio: auto; height: 56px; font-size: 1.5rem; }
+}
