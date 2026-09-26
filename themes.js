@@ -1,18 +1,23 @@
-// Theme registry and persistence. To add a theme, add an entry here and style it
-// in style.css under :root[data-calc-theme="<id>"].
+// Theme registry and persistence, shared by every tool. To add a theme, add an entry
+// here and give it a token block in style.css under :root[data-app-theme="<id>"].
 const Themes = {
   list: [
     { id: 'classic', name: 'Classic', color: '#000000', preview: ['#333333', '#a5a5a5', '#ff9f0a'] },
     { id: 'pixel', name: 'Pixel', color: '#1a1c2c', preview: ['#333c57', '#94b0c2', '#ef7d57'] },
   ],
-  storageKey: 'calc-theme',
+  storageKey: 'app-theme',
+  legacyKey: 'calc-theme', // saved by the calculator-only version
 
   resolve(id) {
     return this.list.find(t => t.id === id) || this.list[0];
   },
 
   load() {
-    try { return this.resolve(localStorage.getItem(this.storageKey)); } catch { return this.list[0]; }
+    try {
+      return this.resolve(localStorage.getItem(this.storageKey) || localStorage.getItem(this.legacyKey));
+    } catch {
+      return this.list[0];
+    }
   },
 
   save(id) {
@@ -21,9 +26,10 @@ const Themes = {
 
   apply(id) {
     const theme = this.resolve(id);
-    document.documentElement.dataset.calcTheme = theme.id;
+    document.documentElement.dataset.appTheme = theme.id;
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.content = theme.color;
+    document.dispatchEvent(new CustomEvent('themechange', { detail: theme }));
     return theme;
   },
 };

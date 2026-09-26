@@ -1,6 +1,6 @@
 {
-  "name": "Calculator",
-  "short_name": "Calculator",
+  "name": "Pocket Tools",
+  "short_name": "Tools",
   "start_url": "./",
   "display": "standalone",
   "orientation": "portrait",

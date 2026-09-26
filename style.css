@@ -5,66 +5,88 @@
   font-display: swap;
 }
 
-/* Classic theme (default). Other themes override these tokens below. */
+/* ==== Theme tokens ======================================================
+   Every tool is built from the shared components below, which only read
+   these tokens. A theme = one token block (+ optional component overrides
+   at the bottom of this file). */
+
+/* Classic (default) */
 :root {
   --bg: #000;
+  --bar-bg: #0d0d0d;
+  --line: #262626;
   --text: #fff;
   --muted: #8e8e93;
-  --result: #fff;
-  --key: #333;
-  --key-active: #737373;
-  --fn: #a5a5a5;
-  --fn-text: #000;
-  --fn-active: #d9d9d9;
-  --op: #ff9f0a;
-  --op-text: #fff;
-  --op-active: #fcc78d;
-  --op-selected-bg: #fff;
-  --op-selected-text: #ff9f0a;
-  --sheet-bg: #1c1c1e;
+  --readout: #fff;
+  --btn: #333;
+  --btn-active: #737373;
+  --alt: #a5a5a5;
+  --alt-text: #000;
+  --alt-active: #d9d9d9;
+  --accent: #ff9f0a;
+  --accent-text: #fff;
+  --accent-active: #fcc78d;
+  --accent-selected-bg: #fff;
+  --accent-selected-text: #ff9f0a;
+  --good: #30d158;
+  --bad: #ff453a;
+  --surface: #1c1c1e;
+  --field: #1c1c1e;
   --focus: #0a84ff;
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --radius: 999px;
   --tile-radius: 14px;
   --sheet-radius: 20px;
+  --title-size: 1.25rem;
+  --tab-font: 0.7rem;
   --result-size: 5.5rem;
-  --expr-size: 1.4rem;
-  --key-font: 2rem;
-  --fn-font: 1.6rem;
-  --op-font: 2.3rem;
+  --result-weight: 300;
+  --small-size: 1.4rem;
+  --btn-font: 2rem;
+  --alt-font: 1.6rem;
+  --accent-font: 2.3rem;
   --gap: 12px;
   color-scheme: dark;
 }
 
-/* Pixel theme: 8-bit palette (Sweetie 16), square keys with notched corners, LCD readout. */
-:root[data-calc-theme="pixel"] {
+/* Pixel: 8-bit palette (Sweetie 16), square notched shapes, LCD readouts. */
+:root[data-app-theme="pixel"] {
   --bg: #1a1c2c;
+  --bar-bg: #141625;
+  --line: #0f101c;
   --text: #f4f4f4;
   --muted: #94b0c2;
-  --result: #a7f070;
-  --key: #333c57;
-  --key-active: #566c86;
-  --fn: #94b0c2;
-  --fn-text: #1a1c2c;
-  --fn-active: #f4f4f4;
-  --op: #ef7d57;
-  --op-text: #1a1c2c;
-  --op-active: #ffcd75;
-  --op-selected-bg: #ffcd75;
-  --op-selected-text: #1a1c2c;
-  --sheet-bg: #262b44;
+  --readout: #a7f070;
+  --btn: #333c57;
+  --btn-active: #566c86;
+  --alt: #94b0c2;
+  --alt-text: #1a1c2c;
+  --alt-active: #f4f4f4;
+  --accent: #ef7d57;
+  --accent-text: #1a1c2c;
+  --accent-active: #ffcd75;
+  --accent-selected-bg: #ffcd75;
+  --accent-selected-text: #1a1c2c;
+  --good: #38b764;
+  --bad: #e0556c;
+  --surface: #262b44;
+  --field: #0f101c;
   --focus: #ffcd75;
   --font: "Press Start 2P", ui-monospace, "Courier New", monospace;
   --radius: 0;
   --tile-radius: 0;
   --sheet-radius: 0;
+  --title-size: 0.85rem;
+  --tab-font: 0.45rem;
   --result-size: 2.6rem;
-  --expr-size: 0.8rem;
-  --key-font: 1.25rem;
-  --fn-font: 0.85rem;
-  --op-font: 1.4rem;
+  --result-weight: 400;
+  --small-size: 0.8rem;
+  --btn-font: 1.25rem;
+  --alt-font: 0.85rem;
+  --accent-font: 1.4rem;
 }
 
+/* ==== Base ============================================================== */
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
 html, body {
@@ -78,23 +100,36 @@ html, body {
   -webkit-user-select: none;
 }
 
-.calculator {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
+[hidden] { display: none !important; }
+
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* ==== App shell ========================================================= */
+.app {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   height: 100dvh;
   max-width: 480px;
   margin: 0 auto;
-  padding: env(safe-area-inset-top) calc(16px + env(safe-area-inset-right))
-           calc(20px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
 }
 
 .topbar {
   display: flex;
-  padding-top: 8px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: 4px 8px 0 20px;
 }
 
-.settings-btn {
+.tool-title {
+  margin: 0;
+  font-size: var(--title-size);
+  font-weight: 600;
+}
+
+.icon-btn {
   display: grid;
   place-items: center;
   width: 44px;
@@ -105,74 +140,184 @@ html, body {
   color: var(--muted);
   cursor: pointer;
 }
-.settings-btn:active { background: var(--key); }
+.icon-btn svg { width: 24px; height: 24px; }
+.icon-btn:active { background: var(--btn); }
 
-.display {
+.stage {
+  container-type: size;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.tool {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  align-items: flex-end;
-  padding: 0 8px 12px;
-  overflow: hidden;
+  gap: 16px;
+  min-height: 0;
+  padding: 8px 16px 16px;
 }
 
-.expression {
-  min-height: 1.5em;
-  font-size: var(--expr-size);
-  color: var(--muted);
-  white-space: nowrap;
-}
-
-.result {
-  font-size: var(--result-size);
-  font-weight: 300;
-  line-height: 1.1;
-  color: var(--result);
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-
-.keys {
+.tabbar {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--gap);
+  grid-template-columns: repeat(var(--tab-count, 1), 1fr);
+  border-top: 1px solid var(--line);
+  background: var(--bar-bg);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
-.key {
-  aspect-ratio: 1;
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px 10px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--tab-font);
+  cursor: pointer;
+}
+.tab svg { width: 24px; height: 24px; }
+.tab[aria-selected="true"] { color: var(--accent); }
+.tab:focus-visible { outline-offset: -3px; }
+
+/* ==== Shared components ================================================= */
+
+/* Buttons: .btn (neutral), .btn.alt (secondary), .btn.accent (primary) */
+.btn {
   border: 0;
   border-radius: var(--radius);
-  background: var(--key);
+  background: var(--btn);
   color: var(--text);
   font: inherit;
-  font-size: var(--key-font);
+  font-size: var(--btn-font);
   cursor: pointer;
   touch-action: manipulation;
   transition: background-color 0.15s;
 }
-.key:active { background: var(--key-active); transition: none; }
+.btn:active { background: var(--btn-active); transition: none; }
+.btn:disabled { opacity: 0.4; cursor: default; }
 
-.key.fn { background: var(--fn); color: var(--fn-text); font-size: var(--fn-font); }
-.key.fn:active { background: var(--fn-active); }
+.btn.alt { background: var(--alt); color: var(--alt-text); font-size: var(--alt-font); }
+.btn.alt:active { background: var(--alt-active); }
 
-.key.op { background: var(--op); color: var(--op-text); font-size: var(--op-font); }
-.key.op:active { background: var(--op-active); }
-.key.op.selected { background: var(--op-selected-bg); color: var(--op-selected-text); }
+.btn.accent { background: var(--accent); color: var(--accent-text); font-size: var(--accent-font); }
+.btn.accent:active { background: var(--accent-active); }
+.btn.accent.selected { background: var(--accent-selected-bg); color: var(--accent-selected-text); }
 
-.key.zero {
+/* Big number panel */
+.readout {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-end;
+  padding: 0 8px;
+  overflow: hidden;
+}
+.readout-main {
+  font-size: var(--result-size);
+  font-weight: var(--result-weight);
+  line-height: 1.1;
+  color: var(--readout);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.readout-sub {
+  min-height: 1.5em;
+  font-size: var(--small-size);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* Grid of keys that sizes itself to the space available */
+.keypad {
+  --cols: 4;
+  --rows: 5;
+  --reserve: 156px; /* room kept for the readout above the keys */
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 1fr);
+  gap: var(--gap);
+}
+.keypad .btn {
+  height: min(
+    calc((100cqw - 32px - (var(--cols) - 1) * var(--gap)) / var(--cols)),
+    calc((100cqh - 24px - var(--reserve) - (var(--rows) - 1) * var(--gap)) / var(--rows))
+  );
+}
+.keypad .btn.wide {
   grid-column: span 2;
-  aspect-ratio: auto;
   text-align: left;
   padding-left: 12%;
 }
 
-.key:focus-visible, .settings-btn:focus-visible, .theme-option:focus-visible, .sheet-done:focus-visible {
-  outline: 3px solid var(--focus);
-  outline-offset: 2px;
+/* Small pill choices (presets, categories) */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chip {
+  padding: 10px 14px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--btn);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+.chip:active { background: var(--btn-active); }
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); }
+
+/* Inputs and selects */
+.field {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 2px solid transparent;
+  border-radius: var(--tile-radius);
+  background: var(--field);
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.field:focus { border-color: var(--accent); outline: none; }
+select.field {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 40px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+                    linear-gradient(-45deg, transparent 50%, var(--muted) 50%);
+  background-position: calc(100% - 20px) 50%, calc(100% - 14px) 50%;
+  background-size: 6px 6px;
+  background-repeat: no-repeat;
 }
 
-/* Theme picker sheet */
+/* Rows of results (laps, history) */
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+}
+.list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ==== Calculator ======================================================== */
+.calc-display { flex: 1; min-height: 0; }
+
+/* ==== Theme picker sheet ================================================ */
 .sheet-backdrop {
   position: fixed;
   inset: 0;
@@ -183,7 +328,6 @@ html, body {
   padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
   background: rgb(0 0 0 / 0.55);
 }
-.sheet-backdrop[hidden] { display: none; }
 
 .sheet {
   display: flex;
@@ -193,7 +337,7 @@ html, body {
   max-width: 440px;
   padding: 20px;
   border-radius: var(--sheet-radius);
-  background: var(--sheet-bg);
+  background: var(--surface);
   color: var(--text);
 }
 .sheet h2 { margin: 0; font-size: 1.1rem; font-weight: 600; }
@@ -212,18 +356,18 @@ html, body {
   padding: 16px 8px;
   border: 3px solid transparent;
   border-radius: var(--tile-radius);
-  background: var(--key);
+  background: var(--btn);
   color: var(--text);
   font: inherit;
   font-size: 1rem;
   cursor: pointer;
 }
-.theme-option[aria-checked="true"] { border-color: var(--op); }
+.theme-option[aria-checked="true"] { border-color: var(--accent); }
 
 .swatch { display: flex; gap: 6px; }
 .swatch i { width: 20px; height: 20px; border-radius: 50%; box-shadow: 0 0 0 2px rgb(255 255 255 / 0.25); }
 
-/* Each option previews its own theme's type and key shape. */
+/* Each option previews its own theme's type and shape. */
 .theme-option[data-theme-id="classic"] .theme-name {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
@@ -237,51 +381,52 @@ html, body {
   padding: 14px;
   border: 0;
   border-radius: var(--tile-radius);
-  background: var(--op);
-  color: var(--op-text);
+  background: var(--accent);
+  color: var(--accent-text);
   font: inherit;
   font-size: 1rem;
   cursor: pointer;
 }
 
-/* Pixel-theme details that tokens can't express. */
-:root[data-calc-theme="pixel"] body { -webkit-font-smoothing: none; }
+/* ==== Pixel component overrides (things tokens can't express) =========== */
+:root[data-app-theme="pixel"] body { -webkit-font-smoothing: none; }
 
-:root[data-calc-theme="pixel"] .display {
-  margin-bottom: 16px;
+:root[data-app-theme="pixel"] .readout {
   padding: 12px;
   background:
     repeating-linear-gradient(transparent 0 3px, rgb(255 255 255 / 0.04) 3px 4px),
-    #0f101c;
+    var(--field);
   box-shadow: inset 4px 4px 0 rgb(0 0 0 / 0.5);
 }
-:root[data-calc-theme="pixel"] .result { font-weight: 400; line-height: 1.4; }
+:root[data-app-theme="pixel"] .readout-main { line-height: 1.4; }
 
-:root[data-calc-theme="pixel"] :is(.key, .theme-option, .sheet-done, .sheet, .display) {
+:root[data-app-theme="pixel"] :is(.btn, .chip, .field, .readout, .sheet, .theme-option, .sheet-done) {
   /* Cut 4px corners so edges look drawn on a pixel grid. */
   clip-path: polygon(0 4px, 4px 4px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px,
     100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%,
     4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px));
 }
 
-:root[data-calc-theme="pixel"] .key {
+:root[data-app-theme="pixel"] :is(.btn, .chip) {
   transition: none;
   box-shadow: inset -4px -4px 0 rgb(0 0 0 / 0.35), inset 4px 4px 0 rgb(255 255 255 / 0.18);
 }
-:root[data-calc-theme="pixel"] .key:active {
+:root[data-app-theme="pixel"] :is(.btn, .chip):active {
   box-shadow: inset 4px 4px 0 rgb(0 0 0 / 0.35), inset -4px -4px 0 rgb(255 255 255 / 0.1);
 }
-/* clip-path hides outlines, so draw the focus ring inside the key. */
-:root[data-calc-theme="pixel"] :is(.key, .theme-option, .sheet-done):focus-visible {
+:root[data-app-theme="pixel"] .chip { font-size: 0.6rem; padding: 12px; }
+:root[data-app-theme="pixel"] .field { font-size: 0.7rem; }
+
+:root[data-app-theme="pixel"] .tabbar { border-top-width: 4px; }
+:root[data-app-theme="pixel"] .tab[aria-selected="true"] { background: var(--btn); }
+:root[data-app-theme="pixel"] .list li { border-bottom: 4px dotted var(--btn); font-size: 0.7rem; }
+
+/* clip-path hides outlines, so draw the focus ring inside instead. */
+:root[data-app-theme="pixel"] :is(.btn, .chip, .theme-option, .sheet-done):focus-visible {
   outline: none;
   box-shadow: inset 0 0 0 4px var(--focus);
 }
 
-@media (max-height: 600px) {
-  :root { --result-size: 3.5rem; --key-font: 1.5rem; }
-  .key { aspect-ratio: auto; height: 56px; }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .key { transition: none; }
+  .btn { transition: none; }
 }

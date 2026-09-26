@@ -1,6 +1,12 @@
-const CACHE = 'calculator-v2';
-const ASSETS = ['./', 'index.html', 'style.css', 'themes.js', 'calculator.js', 'app.js',
-  'manifest.webmanifest', 'icons/icon.svg', 'fonts/PressStart2P-latin.woff2'];
+// Offline support: cache the app's files on install and serve them cache-first.
+// Bump CACHE whenever the file list or file contents change.
+const CACHE = 'pocket-tools-v3';
+const ASSETS = [
+  './', 'index.html', 'style.css', 'themes.js', 'app.js',
+  'lib/format.js', 'lib/calculator.js',
+  'tools/calculator.js',
+  'manifest.webmanifest', 'icons/icon.svg', 'fonts/PressStart2P-latin.woff2',
+];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));

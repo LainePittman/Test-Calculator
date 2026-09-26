@@ -1,66 +1,63 @@
+// App shell: tab bar, switching tools, theme picker, keyboard routing.
+// Each tool in tools/*.js pushes { id, title, init(root), show?, hide?, refresh?, key? }
+// onto window.Tools; its panel is #tool-<id> and its tab is [data-tab=<id>].
 (() => {
-  const calc = new Calculator();
-  const resultEl = document.getElementById('result');
-  const exprEl = document.getElementById('expression');
-  const clearBtn = document.getElementById('clear');
-  const opButtons = document.querySelectorAll('[data-op]');
-  const symbols = { '+': '+', '-': '−', '*': '×', '/': '÷' };
+  const tools = window.Tools || [];
+  const titleEl = document.getElementById('tool-title');
+  const tabbar = document.querySelector('.tabbar');
+  const tabs = [...tabbar.querySelectorAll('[data-tab]')];
+  const LAST_TOOL_KEY = 'app-last-tool';
+  let active = null;
 
-  function prettyNumber(str) {
-    if (str === 'Error' || str.includes('e')) return str;
-    const [int, dec] = str.split('.');
-    const grouped = int.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    return dec !== undefined ? `${grouped}.${dec}` : grouped;
-  }
+  const panel = tool => document.getElementById(`tool-${tool.id}`);
 
-  function fitText() {
-    resultEl.style.fontSize = '';
-    const display = getComputedStyle(resultEl.parentElement);
-    const max = resultEl.parentElement.clientWidth
-      - parseFloat(display.paddingLeft) - parseFloat(display.paddingRight);
-    let size = parseFloat(getComputedStyle(resultEl).fontSize);
-    while (resultEl.scrollWidth > max && size > 20) {
-      size -= 2;
-      resultEl.style.fontSize = size + 'px';
+  function show(id) {
+    const tool = tools.find(t => t.id === id) || tools[0];
+    if (tool === active) return;
+    if (active) {
+      active.hide?.();
+      panel(active).hidden = true;
     }
+    active = tool;
+    panel(tool).hidden = false;
+    titleEl.textContent = tool.title;
+    for (const tab of tabs) {
+      const selected = tab.dataset.tab === tool.id;
+      tab.setAttribute('aria-selected', String(selected));
+      tab.tabIndex = selected ? 0 : -1;
+    }
+    tool.show?.();
+    try { localStorage.setItem(LAST_TOOL_KEY, tool.id); } catch {}
+    history.replaceState(null, '', '#' + tool.id);
   }
 
-  function render() {
-    resultEl.textContent = prettyNumber(calc.current).replace('-', '−');
-    exprEl.textContent = calc.operator
-      ? `${prettyNumber(Calculator.format(calc.previous))} ${symbols[calc.operator]}`
-      : '';
-    clearBtn.textContent = calc.current !== '0' && !calc.overwrite ? 'C' : 'AC';
-    opButtons.forEach(b => b.classList.toggle(
-      'selected', b.dataset.op === calc.operator && calc.overwrite));
-    fitText();
-  }
+  for (const tool of tools) tool.init(panel(tool));
+  tabbar.style.setProperty('--tab-count', tabs.length);
 
-  function press(btn) {
-    const { digit, op, action } = btn.dataset;
-    if (digit !== undefined) calc.inputDigit(digit);
-    else if (op) calc.setOperator(op);
-    else if (action === 'clear') btn.textContent === 'C' ? calc.clearEntry() : calc.clear();
-    else if (action === 'sign') calc.toggleSign();
-    else if (action === 'percent') calc.percent();
-    else if (action === 'decimal') calc.inputDecimal();
-    else if (action === 'equals') calc.equals();
-    if (navigator.vibrate) navigator.vibrate(8);
-    render();
-  }
-
-  document.querySelector('.keys').addEventListener('click', e => {
-    const btn = e.target.closest('button');
-    if (btn) press(btn);
+  tabbar.addEventListener('click', e => {
+    const tab = e.target.closest('[data-tab]');
+    if (tab) show(tab.dataset.tab);
   });
 
-  // Theme picker
+  // Arrow keys move between tabs, as in any tab list.
+  tabbar.addEventListener('keydown', e => {
+    const step = { ArrowLeft: -1, ArrowRight: 1 }[e.key];
+    if (!step) return;
+    const i = (tabs.findIndex(t => t.dataset.tab === active.id) + step + tabs.length) % tabs.length;
+    show(tabs[i].dataset.tab);
+    tabs[i].focus();
+    e.stopPropagation();
+  });
+
+  window.addEventListener('hashchange', () => show(location.hash.slice(1)));
+
+  // ---- Theme picker -----------------------------------------------------
   const settings = document.getElementById('settings');
   const settingsBtn = document.getElementById('settings-btn');
   const themeOptions = document.getElementById('theme-options');
 
   function renderThemeOptions() {
-    const current = document.documentElement.dataset.calcTheme;
+    const current = document.documentElement.dataset.appTheme;
     themeOptions.replaceChildren(...Themes.list.map(theme => {
       const btn = document.createElement('button');
       btn.type = 'button';
@@ -96,45 +93,42 @@
     settingsBtn.focus();
   }
 
-  function setTheme(id) {
-    const theme = Themes.apply(id);
-    Themes.save(theme.id);
-    renderThemeOptions();
-    themeOptions.querySelector(`[data-theme-id="${theme.id}"]`).focus();
-    fitText();
-    // Web fonts load lazily; re-fit once the theme's font is ready.
-    if (document.fonts) document.fonts.ready.then(fitText);
-  }
-
   settingsBtn.addEventListener('click', openSettings);
   document.getElementById('settings-done').addEventListener('click', closeSettings);
   settings.addEventListener('click', e => { if (e.target === settings) closeSettings(); });
   themeOptions.addEventListener('click', e => {
     const btn = e.target.closest('[data-theme-id]');
-    if (btn) setTheme(btn.dataset.themeId);
+    if (!btn) return;
+    Themes.save(Themes.apply(btn.dataset.themeId).id);
+    renderThemeOptions();
+    themeOptions.querySelector(`[data-theme-id="${btn.dataset.themeId}"]`).focus();
   });
 
-  // Keyboard support for desktop / hardware keyboards.
+  // Tools re-measure after a theme change, resize, or the pixel font arriving.
+  const refresh = () => active?.refresh?.();
+  document.addEventListener('themechange', () => {
+    refresh();
+    document.fonts?.ready.then(refresh);
+  });
+  window.addEventListener('resize', refresh);
+  document.fonts?.ready.then(refresh);
+
+  // ---- Keyboard ---------------------------------------------------------
   document.addEventListener('keydown', e => {
     if (!settings.hidden) {
       if (e.key === 'Escape') closeSettings();
       return;
     }
-    const k = e.key;
-    if (/^\d$/.test(k)) calc.inputDigit(k);
-    else if (k === '.' || k === ',') calc.inputDecimal();
-    else if ('+-*/'.includes(k) && k.length === 1) calc.setOperator(k);
-    else if (k === 'Enter' || k === '=') { e.preventDefault(); calc.equals(); }
-    else if (k === 'Escape') calc.clear();
-    else if (k === 'Backspace') calc.clearEntry();
-    else if (k === '%') calc.percent();
-    else return;
-    render();
+    if (e.target.closest('input, select, textarea')) return;
+    if (e.target.closest('[role="tab"]') && (e.key === 'Enter' || e.key === ' ')) return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (active?.key?.(e)) e.preventDefault();
   });
 
-  window.addEventListener('resize', fitText);
-  render();
-  if (document.fonts) document.fonts.ready.then(fitText);
+  // ---- Start ------------------------------------------------------------
+  let last = null;
+  try { last = localStorage.getItem(LAST_TOOL_KEY); } catch {}
+  show(location.hash.slice(1) || last);
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     navigator.serviceWorker.register('sw.js');
