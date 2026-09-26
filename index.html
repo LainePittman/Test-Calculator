@@ -34,7 +34,7 @@
       <section class="tool tool-calculator" id="tool-calculator" role="tabpanel" aria-labelledby="tab-calculator" hidden>
         <div class="readout calc-display">
           <div class="readout-sub" id="calc-expression" aria-live="polite"></div>
-          <output class="readout-main" id="calc-result">0</output>
+          <output class="readout-main" id="calc-result" data-figlet>0</output>
         </div>
         <div class="keypad">
           <button class="btn alt" data-action="clear" id="calc-clear">AC</button>
@@ -66,7 +66,7 @@
       <!-- Stopwatch -->
       <section class="tool tool-stopwatch" id="tool-stopwatch" role="tabpanel" aria-labelledby="tab-stopwatch" hidden>
         <div class="readout clock-display">
-          <output class="readout-main clock" id="sw-time" aria-live="off">00:00.00</output>
+          <output class="readout-main clock" id="sw-time" aria-live="off" data-figlet>00:00.00</output>
         </div>
         <div class="controls">
           <button class="btn alt" id="sw-secondary" type="button" disabled>Lap</button>
@@ -107,7 +107,7 @@
         <div class="timer-view" id="timer-run" hidden>
           <div class="readout clock-display" id="timer-readout">
             <div class="readout-sub" id="timer-status"></div>
-            <output class="readout-main clock" id="timer-left" aria-live="off">0:00</output>
+            <output class="readout-main clock" id="timer-left" aria-live="off" data-figlet>0:00</output>
             <div class="meter" aria-hidden="true"><div class="meter-fill" id="timer-meter"></div></div>
           </div>
           <div class="chips even">
@@ -213,6 +213,7 @@
   <script src="lib/store.js"></script>
   <script src="lib/format.js"></script>
   <script src="lib/fit.js"></script>
+  <script src="lib/figlet.js"></script>
   <script src="lib/calculator.js"></script>
   <script src="lib/stopwatch.js"></script>
   <script src="lib/timer.js"></script>

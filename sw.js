@@ -1,11 +1,11 @@
 // Offline support: cache the app's files on install and serve them cache-first.
 // Bump CACHE whenever the file list or file contents change.
-const CACHE = 'pocket-tools-v9';
+const CACHE = 'pocket-tools-v10';
 const ASSETS = [
   './', 'index.html', 'style.css', 'themes.js', 'app.js',
-  'lib/store.js', 'lib/format.js', 'lib/fit.js', 'lib/calculator.js', 'lib/stopwatch.js', 'lib/timer.js', 'lib/units.js', 'lib/blackjack.js',
+  'lib/store.js', 'lib/format.js', 'lib/fit.js', 'lib/figlet.js', 'lib/calculator.js', 'lib/stopwatch.js', 'lib/timer.js', 'lib/units.js', 'lib/blackjack.js',
   'tools/calculator.js', 'tools/stopwatch.js', 'tools/timer.js', 'tools/convert.js', 'tools/blackjack.js',
-  'manifest.webmanifest', 'icons/icon.svg', 'fonts/PressStart2P-latin.woff2', 'fonts/PoiretOne-latin.woff2', 'fonts/JosefinSans-latin.woff2',
+  'manifest.webmanifest', 'icons/icon.svg', 'fonts/PressStart2P-latin.woff2', 'fonts/PoiretOne-latin.woff2', 'fonts/JosefinSans-latin.woff2', 'fonts/IBMPlexMono-latin.woff2',
 ];
 
 self.addEventListener('install', e => {

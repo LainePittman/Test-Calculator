@@ -23,7 +23,7 @@ function serve() {
 }
 
 const suites = [];
-const THEMES = ['classic', 'pixel', 'deco'];
+const THEMES = ['classic', 'pixel', 'deco', 'ascii'];
 const suite = (name, fn) => suites.push({ name, fn });
 
 // ---- Helpers ----------------------------------------------------------------
@@ -60,11 +60,18 @@ async function fullyVisible(p, selector) {
   const ok = await p.$eval(selector, el => el.scrollWidth <= el.clientWidth + 1);
   assert.ok(ok, `${selector} text is cut off`);
 }
+async function labelsFit(p, selector) {
+  const spill = await p.$$eval(selector, els => els
+    .filter(e => e.offsetParent && (e.scrollHeight > e.clientHeight + 1 || e.scrollWidth > e.clientWidth + 1))
+    .map(e => e.textContent.trim()));
+  assert.deepStrictEqual(spill, [], `${selector}: labels spill out of their keys`);
+}
 async function oneLine(p, selector) {
   const ok = await p.$$eval(selector, els => els.every(e => {
     const lh = parseFloat(getComputedStyle(e).lineHeight) || parseFloat(getComputedStyle(e).fontSize) * 1.3;
     const cs = getComputedStyle(e);
-    const content = e.getBoundingClientRect().height - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    // clientHeight leaves out borders (some themes draw thick character frames).
+    const content = e.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
     return content < lh * 1.5;
   }));
   assert.ok(ok, `${selector} wraps onto two lines`);
@@ -123,9 +130,60 @@ suite('shell: Art Deco theme loads its fonts and styles every tool', async p => 
     assert.ok(framed, `${id} has gold frames`);
   }
   await p.click('#settings-btn');
-  assert.strictEqual(await p.$$eval('.theme-option', o => o.length), 3);
+  assert.strictEqual(await p.$$eval('.theme-option', o => o.length), await p.evaluate(() => Themes.list.length));
   await oneLine(p, '.theme-option .theme-name');
   await shot(p, 'theme-picker-deco');
+});
+
+suite('shell: ASCII Art draws big numbers as ASCII art', async p => {
+  const art = sel => p.$eval(sel, el => el.nextElementSibling?.classList.contains('figlet') ? el.nextElementSibling.textContent : null);
+  await press(p, '[data-digit="4"]', '[data-digit="2"]');
+  assert.strictEqual(await art('#calc-result'), '', 'no art in other themes');
+  await setTheme(p, 'ascii');
+  const drawing = await art('#calc-result');
+  assert.strictEqual(drawing, await p.evaluate(() => Figlet.render('42')), 'draws 42');
+  assert.strictEqual(await p.textContent('#calc-result'), '42', 'screen readers still get the number');
+  assert.ok(await p.$eval('#calc-result', e => e.classList.contains('figlet-on')));
+  const artFits = sel => p.$eval(sel, el => {
+    const pre = el.nextElementSibling, box = el.parentElement.getBoundingClientRect(), r = pre.getBoundingClientRect();
+    return r.left >= box.left - 1 && r.right <= box.right + 1;
+  });
+  assert.ok(await artFits('#calc-result'), 'art fits its display');
+  await shot(p, 'ascii-calculator-art');
+
+  // Too long to draw legibly: falls back to plain text.
+  for (const d of '123456789') await p.click(`#tool-calculator [data-digit="${d}"]`);
+  await press(p, '[data-op="*"]', '[data-digit="3"]', '[data-action="equals"]');
+  assert.strictEqual(await art('#calc-result'), '', 'long numbers are plain text');
+  assert.ok(!(await p.$eval('#calc-result', e => e.classList.contains('figlet-on'))));
+
+  // The stopwatch art ticks along with the time.
+  await openTool(p, 'stopwatch');
+  assert.strictEqual(await art('#sw-time'), await p.evaluate(() => Figlet.render('00:00.00')));
+  await p.click('#sw-primary');
+  await p.clock.runFor(1500);
+  await p.click('#sw-primary');
+  assert.strictEqual(await art('#sw-time'), await p.evaluate(() => Figlet.render('00:01.50')));
+  assert.ok(await artFits('#sw-time'));
+  await shot(p, 'ascii-stopwatch-art');
+
+  // Switching theme away removes the art.
+  await setTheme(p, 'classic');
+  assert.strictEqual(await art('#sw-time'), '');
+  assert.ok(await p.isVisible('#sw-time'));
+});
+
+suite('shell: ASCII Art cards use text suits', async p => {
+  await setTheme(p, 'ascii');
+  await stackDeck(p, '10 9 7 8');
+  await p.click('#bj-deal');
+  const suits = await p.$$eval('#bj-player-cards .card .card-suit', els =>
+    els.map(e => getComputedStyle(e, '::after').content));
+  assert.deepStrictEqual(suits, ['"<3"', '"^"']);
+  await p.click('#settings-btn');
+  assert.strictEqual(await p.$$eval('.theme-option', o => o.length), await p.evaluate(() => Themes.list.length));
+  await oneLine(p, '.theme-option .theme-name');
+  await shot(p, 'theme-picker-ascii');
 });
 
 suite('shell: keeps a theme saved by the calculator-only version', async p => {
@@ -166,6 +224,7 @@ suite('calculator: fits a short phone screen', async p => {
     await setTheme(p, id);
     await fitsInViewport(p, '#tool-calculator [data-action="equals"]');
     await noHorizontalScroll(p);
+    await labelsFit(p, '#tool-calculator .keypad .btn').catch(e => { throw new Error(`${id}: ${e.message}`); });
     await shot(p, `calculator-small-${id}`);
   }
 });
@@ -386,6 +445,7 @@ for (const id of THEMES) {
     await noHorizontalScroll(p);
     await textFits(p, '#timer-entry');
     await oneLine(p, '#timer-presets .chip');
+    await labelsFit(p, '.timer-keypad .btn');
     await p.locator('#timer-start').scrollIntoViewIfNeeded();
     await fitsInViewport(p, '#timer-start');
     await shot(p, `timer-small-${id}`);

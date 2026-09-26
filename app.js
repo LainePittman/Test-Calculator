@@ -27,12 +27,14 @@
       tab.tabIndex = selected ? 0 : -1;
     }
     tool.show?.();
+    figlets?.forEach(update => update());
     try { localStorage.setItem(LAST_TOOL_KEY, tool.id); } catch {}
     history.replaceState(null, '', '#' + tool.id);
   }
 
   window.App = { show };
   for (const tool of tools) tool.init(panel(tool));
+  const figlets = [...document.querySelectorAll('[data-figlet]')].map(el => Figlet.mirror(el));
   tabbar.style.setProperty('--tab-count', tabs.length);
 
   tabbar.addEventListener('click', e => {
@@ -106,7 +108,10 @@
   });
 
   // Tools re-measure after a theme change, resize, or the pixel font arriving.
-  const refresh = () => active?.refresh?.();
+  const refresh = () => {
+    active?.refresh?.();
+    figlets.forEach(update => update());
+  };
   document.addEventListener('themechange', () => {
     refresh();
     document.fonts?.ready.then(refresh);

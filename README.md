@@ -29,8 +29,13 @@ tool and is remembered on the device.
   chiptune timer beep
 - **Art Deco**: black lacquer, gold and cream; Poiret One and Josefin Sans type, gold
   sunburst readouts, double gold rules, emerald fan card backs, two-tone chime alarm
+- **ASCII Art**: monochrome text mode in IBM Plex Mono. Frames drawn with characters
+  (`+---+` keys, `.---.` secondary, `#===#` primary), big readouts drawn as ASCII-art
+  digits, `> PROMPT_` titles, reverse video on press, `####....` progress bar, text-art
+  cards with `<3` `<>` `^` `&` suits, and a terminal-bell alarm
 
-Each theme also sets the timer's alarm sound (`sound` in `themes.js`).
+Each theme also sets the timer's alarm sound (`sound` in `themes.js`), and can ask for
+big readouts marked `data-figlet` to be drawn as ASCII art (`figlet: true`, see `lib/figlet.js`).
 
 ## Run locally
 ```sh
@@ -44,7 +49,7 @@ open it in the browser, and choose **Add to Home Screen**.
 ```sh
 npm test                 # unit tests for the logic in lib/ and themes.js (no install needed: node test.js)
 npm install              # once, for the browser tests
-npm run test:browser     # drives every tool at phone size in both themes
+npm run test:browser     # drives every tool at phone size in every theme
 SCREENSHOTS=1 npm run test:browser   # also saves screenshots to test-screenshots/
 ```
 
@@ -53,7 +58,7 @@ SCREENSHOTS=1 npm run test:browser   # also saves screenshots to test-screenshot
 - `app.js`: switches tools, theme picker, keyboard routing
 - `themes.js`: list of themes; saves the chosen one
 - `style.css`: theme tokens, then shared components (`.btn`, `.readout`, `.keypad`,
-  `.chip`, `.field`, `.list`), then per-tool layout, then Pixel overrides
+  `.chip`, `.field`, `.list`, `.card`), then per-tool layout, then per-theme overrides
 - `lib/`: pure logic with no DOM access, unit tested in Node (plus two tiny shared
   browser helpers: `store.js` for saving, `fit.js` for shrinking big numbers to fit)
 - `tools/`: one file per tool that connects its panel to its logic

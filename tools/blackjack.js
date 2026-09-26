@@ -34,6 +34,7 @@
       return div;
     }
     div.className = 'card' + (RED.includes(card.suit) ? ' red' : '');
+    div.dataset.suit = SUIT_NAMES[card.suit]; // themes can draw suits their own way
     div.setAttribute('aria-label', `${RANK_NAMES[card.rank] || card.rank} of ${SUIT_NAMES[card.suit]}`);
     const rank = document.createElement('span');
     rank.className = 'card-rank';

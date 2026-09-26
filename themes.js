@@ -2,6 +2,7 @@
 // here and give it a token block in style.css under :root[data-app-theme="<id>"].
 const Themes = {
   // sound: the timer alarm. Each beep plays the notes (Hz) in turn on that oscillator wave.
+  // figlet: draw big readouts ([data-figlet]) as ASCII art.
   list: [
     { id: 'classic', name: 'Classic', color: '#000000', preview: ['#333333', '#a5a5a5', '#ff9f0a'],
       sound: { wave: 'sine', notes: [880, 880, 880], gain: 0.35 } },
@@ -9,6 +10,9 @@ const Themes = {
       sound: { wave: 'square', notes: [988, 988, 988], gain: 0.12 } },
     { id: 'deco', name: 'Art Deco', color: '#0b0d12', preview: ['#161a22', '#e8dcc0', '#d4af37'],
       sound: { wave: 'triangle', notes: [1318.5, 1046.5], gain: 0.3 } }, // two-tone lobby chime
+    { id: 'ascii', name: 'ASCII Art', color: '#0c0c0c', preview: ['#0c0c0c', '#9a9a9a', '#ffffff'],
+      figlet: true, // big readouts drawn as ASCII-art digits (lib/figlet.js)
+      sound: { wave: 'sawtooth', notes: [740, 740], gain: 0.12 } }, // terminal bell
   ],
   storageKey: 'app-theme',
   legacyKey: 'calc-theme', // saved by the calculator-only version
