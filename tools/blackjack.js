@@ -1,28 +1,27 @@
-// Blackjack tool: bet with chips, play against the CPU dealer. The dealer's turn is
-// revealed one card at a time so it feels like playing someone.
+// Blackjack tool: play against the CPU dealer and keep a win/loss/push record. The
+// dealer's turn is revealed one card at a time so it feels like playing someone.
 (window.Tools = window.Tools || []).push((() => {
   const STORE_KEY = 'blackjack';
   const DEALER_PAUSE = 550; // ms between dealer cards
   const saved = Store.get(STORE_KEY, {});
   const game = new Blackjack(saved.game || {});
-  let bet = Number(saved.bet) || 25;          // bet being built in the betting phase
-  let shown = { player: 0, dealer: 0 };       // cards already on the table (for deal animations)
-  let reveal = null;                          // dealer animation in progress
+  let shown = { player: 0, dealer: 0 }; // cards already on the table (for deal animations)
+  let reveal = null;                    // dealer animation in progress
+  let resetTimer = null;
   let el = {};
 
-  const save = () => Store.set(STORE_KEY, { game, bet });
-  const money = n => Format.group(Format.number(n)); // 3:2 on odd bets can pay halves
+  const save = () => Store.set(STORE_KEY, { game });
   const RED = ['♥', '♦'];
   const SUIT_NAMES = { '♠': 'spades', '♥': 'hearts', '♦': 'diamonds', '♣': 'clubs' };
   const RANK_NAMES = { A: 'Ace', J: 'Jack', Q: 'Queen', K: 'King' };
 
   const MESSAGES = {
-    blackjack: ['Blackjack!', 'good'],
+    blackjack: ['Blackjack! You win', 'good'],
     win: ['You win!', 'good'],
-    'dealer-bust': ['Dealer busts!', 'good'],
-    push: ['Push', 'even'],
+    'dealer-bust': ['Dealer busts! You win', 'good'],
+    push: ['Push: a tie', 'even'],
     lose: ['Dealer wins', 'bad'],
-    bust: ['Bust!', 'bad'],
+    bust: ['Bust! Dealer wins', 'bad'],
     'dealer-blackjack': ['Dealer has blackjack', 'bad'],
   };
 
@@ -46,10 +45,15 @@
     return div;
   }
 
-  function totalText(cards) {
-    if (!cards.length) return '';
+  function renderTotal(output, cards) {
+    if (!cards.length) {
+      output.textContent = '';
+      output.className = 'bj-total';
+      return;
+    }
     const { total, soft } = Blackjack.value(cards);
-    return soft && total < 21 ? `${total - 10} / ${total}` : String(total);
+    output.textContent = soft && total < 21 ? `${total - 10}/${total}` : String(total);
+    output.className = 'bj-total' + (total > 21 ? ' bust' : total === 21 ? ' twenty-one' : '');
   }
 
   // How many dealer cards are face up right now.
@@ -80,54 +84,40 @@
   function render() {
     const visible = dealerVisible();
     // Only the hole card sits face down; cards the dealer hasn't drawn yet stay off the table.
-    renderHand(el.dealerCards, game.dealer.slice(0, Math.max(visible, 2)), visible, 'dealer');
+    const dealerCards = game.dealer.slice(0, Math.max(visible, 2));
+    renderHand(el.dealerCards, dealerCards, visible, 'dealer');
     renderHand(el.playerCards, game.player, game.player.length, 'player');
-    el.dealerTotal.textContent = totalText(game.dealer.slice(0, visible));
-    el.playerTotal.textContent = totalText(game.player);
+    renderTotal(el.dealerTotal, game.dealer.slice(0, visible));
+    renderTotal(el.playerTotal, game.player);
 
     const settled = game.phase === 'done' && !reveal;
-    const playing = game.phase === 'player' || reveal;
-    const betting = game.phase === 'betting';
+    const playing = game.phase === 'player' || Boolean(reveal);
 
-    // Chips shown: during the dealer's turn, hold back the result until it's revealed.
-    const bankroll = reveal ? reveal.bankrollBefore : game.bankroll;
-    el.bankroll.textContent = money(bankroll);
-    el.bet.textContent = money(betting ? bet : game.bet);
-    const { won, lost, pushed } = game.stats;
-    el.record.textContent = `${won}W ${lost}L ${pushed}P`;
+    // Hold the record back until the dealer's cards have all been shown.
+    const stats = { ...game.stats };
+    if (reveal) stats[{ win: 'won', lose: 'lost', push: 'pushed' }[game.result]]--;
+    el.won.textContent = stats.won;
+    el.lost.textContent = stats.lost;
+    el.pushed.textContent = stats.pushed;
 
     let message = '', tone = '';
-    if (betting) message = game.broke ? 'Out of chips' : 'Place your bet';
+    if (game.phase === 'ready') message = 'Tap Deal to play';
     else if (playing) message = reveal ? "Dealer's turn" : 'Hit or stand?';
-    else if (settled) {
-      const [text, cls] = MESSAGES[game.outcome];
-      const net = game.payout;
-      message = net ? `${text} ${net > 0 ? '+' : '−'}${money(Math.abs(net))}` : `${text}. Bet returned`;
-      tone = cls;
-    }
+    else if (settled) [message, tone] = MESSAGES[game.outcome];
     el.message.textContent = message;
     el.message.className = 'bj-message ' + tone;
 
-    el.betting.hidden = !betting || game.broke;
     el.playing.hidden = !playing;
-    el.done.hidden = !settled || game.broke;
-    el.broke.hidden = !(game.broke && !playing);
-
-    for (const b of el.playing.querySelectorAll('button')) b.disabled = Boolean(reveal);
-    el.double.disabled = Boolean(reveal) || !game.canDouble;
-    for (const chip of el.chips.querySelectorAll('[data-chip]')) {
-      chip.disabled = bet + Number(chip.dataset.chip) > game.bankroll;
-    }
-    el.deal.disabled = !game.canDeal(bet);
-    el.again.disabled = !game.canDeal(Math.min(game.bet, game.bankroll));
-    el.again.textContent = game.bet > game.bankroll ? `Deal ${money(game.bankroll)}` : 'Deal again';
+    el.hit.disabled = el.stand.disabled = Boolean(reveal);
+    el.deal.hidden = playing;
+    el.deal.textContent = settled ? 'Deal again' : 'Deal';
   }
 
   // Plays the dealer's cards out one at a time after the hand has been settled.
-  function revealDealer(bankrollBefore) {
+  function revealDealer() {
     const drawn = game.dealer.length;
     const needsTurn = game.outcome !== 'bust'; // no need to draw if you bust
-    reveal = { count: 2, bankrollBefore };
+    reveal = { count: 2 };
     render();
     const step = () => {
       if (!needsTurn || reveal.count >= drawn) {
@@ -149,40 +139,50 @@
     render();
   }
 
-  // Runs a player action; animates the dealer if the hand just ended.
   function act(action) {
-    if (reveal) return;
-    const bankrollBefore = game.bankroll;
+    if (reveal || game.phase !== 'player') return;
     action();
     save();
-    if (game.phase === 'done' && game.dealer.length >= 2) revealDealer(bankrollBefore);
+    if (game.phase === 'done') revealDealer();
     else render();
   }
 
-  function deal(amount) {
-    if (reveal || !game.canDeal(amount)) return;
+  function deal() {
+    if (reveal || game.phase === 'player') return;
     shown = { player: 0, dealer: 0 };
-    bet = amount;
-    const bankrollBefore = game.bankroll;
-    game.deal(amount);
+    game.deal();
     save();
-    if (game.phase === 'done') { // natural blackjack: flip the hole card after the deal lands
-      reveal = { count: 1, bankrollBefore };
+    if (game.phase === 'done') { // a blackjack on the deal: flip the hole card once the cards land
+      reveal = { count: 1 };
       render();
-      reveal.timer = setTimeout(() => { reveal.count = 2; reveal.timer = setTimeout(finishReveal, 300); render(); }, 700);
+      reveal.timer = setTimeout(() => {
+        reveal.count = 2;
+        render();
+        reveal.timer = setTimeout(finishReveal, 300);
+      }, 700);
     } else {
       render();
     }
   }
 
-  function changeBet() {
-    game.phase = 'betting';
-    game.player = [];
-    game.dealer = [];
-    shown = { player: 0, dealer: 0 };
-    bet = Math.min(bet, game.bankroll);
+  // Reset needs a second tap within 3 seconds, so the record isn't cleared by accident.
+  function reset() {
+    if (!el.reset.classList.contains('confirm')) {
+      el.reset.classList.add('confirm');
+      el.reset.textContent = 'Sure?';
+      resetTimer = setTimeout(cancelReset, 3000);
+      return;
+    }
+    cancelReset();
+    game.resetStats();
     save();
     render();
+  }
+
+  function cancelReset() {
+    clearTimeout(resetTimer);
+    el.reset.classList.remove('confirm');
+    el.reset.textContent = 'Reset';
   }
 
   return {
@@ -191,31 +191,12 @@
 
     init(root) {
       el = Object.fromEntries(['dealer-cards', 'player-cards', 'dealer-total', 'player-total', 'message',
-        'bankroll', 'bet', 'record', 'betting', 'playing', 'done', 'broke', 'chips', 'clear', 'deal',
-        'double', 'hit', 'stand', 'change', 'again', 'refill']
+        'won', 'lost', 'pushed', 'reset', 'playing', 'hit', 'stand', 'deal']
         .map(id => [id.replace(/-(\w)/g, (_, c) => c.toUpperCase()), root.querySelector(`#bj-${id}`)]));
-
-      el.chips.addEventListener('click', e => {
-        const chip = e.target.closest('[data-chip]');
-        if (!chip || chip.disabled) return;
-        bet += Number(chip.dataset.chip);
-        save();
-        render();
-      });
-      el.clear.addEventListener('click', () => { bet = 0; save(); render(); });
-      el.deal.addEventListener('click', () => deal(bet));
-      el.again.addEventListener('click', () => deal(Math.min(game.bet, game.bankroll)));
-      el.change.addEventListener('click', changeBet);
+      el.deal.addEventListener('click', deal);
       el.hit.addEventListener('click', () => act(() => game.hit()));
       el.stand.addEventListener('click', () => act(() => game.stand()));
-      el.double.addEventListener('click', () => act(() => game.double()));
-      el.refill.addEventListener('click', () => {
-        game.newBankroll();
-        bet = 25;
-        shown = { player: 0, dealer: 0 };
-        save();
-        render();
-      });
+      el.reset.addEventListener('click', reset);
     },
 
     show() {
@@ -224,18 +205,18 @@
       render();
     },
 
-    hide: finishReveal,
+    hide() {
+      finishReveal();
+      cancelReset();
+    },
 
-    // Betting: Enter deals. Playing: H hit, S stand, D double. After a hand: Enter deals again, B changes bet.
+    // Enter deals; H hits, S stands.
     key(e) {
       if (e.target.closest('button') && (e.key === ' ' || e.key === 'Enter')) return false;
       const k = e.key.toLowerCase();
-      if (game.phase === 'betting' && k === 'enter') deal(bet);
-      else if (game.phase === 'player' && k === 'h') act(() => game.hit());
-      else if (game.phase === 'player' && k === 's') act(() => game.stand());
-      else if (game.phase === 'player' && k === 'd') act(() => game.double());
-      else if (game.phase === 'done' && !reveal && k === 'enter') deal(Math.min(game.bet, game.bankroll));
-      else if (game.phase === 'done' && !reveal && k === 'b') changeBet();
+      if (k === 'enter' && game.phase !== 'player') deal();
+      else if (k === 'h' && game.phase === 'player') act(() => game.hit());
+      else if (k === 's' && game.phase === 'player') act(() => game.stand());
       else return false;
       return true;
     },

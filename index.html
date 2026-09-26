@@ -144,48 +144,26 @@
       <section class="tool tool-blackjack" id="tool-blackjack" role="tabpanel" aria-labelledby="tab-blackjack" hidden>
         <div class="readout bj-table">
           <div class="bj-hand">
-            <div class="bj-label"><span>Dealer</span><span class="bj-total" id="bj-dealer-total"></span></div>
+            <div class="bj-label"><span>Dealer</span><output class="bj-total" id="bj-dealer-total" aria-label="Dealer total"></output></div>
             <div class="cards" id="bj-dealer-cards" aria-label="Dealer's cards"></div>
           </div>
           <div class="bj-message" id="bj-message" aria-live="polite"></div>
           <div class="bj-hand">
-            <div class="bj-label"><span>You</span><span class="bj-total" id="bj-player-total"></span></div>
+            <div class="bj-label"><span>You</span><output class="bj-total" id="bj-player-total" aria-label="Your total"></output></div>
             <div class="cards" id="bj-player-cards" aria-label="Your cards"></div>
           </div>
         </div>
-        <div class="bj-bank">
-          <span>Chips <strong id="bj-bankroll">1,000</strong></span>
-          <span>Bet <strong id="bj-bet">0</strong></span>
-          <span class="bj-record" id="bj-record" title="Wins, losses, pushes"></span>
+        <div class="bj-record" aria-label="Your record">
+          <div class="bj-stat win"><strong id="bj-won">0</strong><span>Wins</span></div>
+          <div class="bj-stat lose"><strong id="bj-lost">0</strong><span>Losses</span></div>
+          <div class="bj-stat"><strong id="bj-pushed">0</strong><span>Pushes</span></div>
+          <button class="chip bj-reset" id="bj-reset" type="button">Reset</button>
         </div>
-        <div class="bj-controls" id="bj-betting">
-          <div class="chips even" id="bj-chips">
-            <button class="chip" type="button" data-chip="10">+10</button>
-            <button class="chip" type="button" data-chip="25">+25</button>
-            <button class="chip" type="button" data-chip="50">+50</button>
-            <button class="chip" type="button" data-chip="100">+100</button>
-          </div>
-          <div class="controls">
-            <button class="btn alt" id="bj-clear" type="button">Clear</button>
-            <button class="btn accent" id="bj-deal" type="button">Deal</button>
-          </div>
+        <div class="controls" id="bj-playing" hidden>
+          <button class="btn alt" id="bj-hit" type="button">Hit</button>
+          <button class="btn accent" id="bj-stand" type="button">Stand</button>
         </div>
-        <div class="bj-controls" id="bj-playing" hidden>
-          <div class="controls three">
-            <button class="btn alt" id="bj-double" type="button">Double</button>
-            <button class="btn" id="bj-hit" type="button">Hit</button>
-            <button class="btn accent" id="bj-stand" type="button">Stand</button>
-          </div>
-        </div>
-        <div class="bj-controls" id="bj-done" hidden>
-          <div class="controls">
-            <button class="btn alt" id="bj-change" type="button">Change bet</button>
-            <button class="btn accent" id="bj-again" type="button">Deal again</button>
-          </div>
-        </div>
-        <div class="bj-controls" id="bj-broke" hidden>
-          <button class="btn accent action" id="bj-refill" type="button">Get 1,000 new chips</button>
-        </div>
+        <button class="btn accent action" id="bj-deal" type="button">Deal</button>
       </section>
     </main>
 

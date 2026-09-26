@@ -16,9 +16,10 @@ screen, and works offline.
   as you type, swap button, remembers your units per category. Accepts `1,5` or `1.5`
 
 ## Games
-- **Blackjack**: play against a CPU dealer with chips (start with 1,000; saved between
-  visits). Hit, stand or double; blackjack pays 3:2; the dealer draws to 16 and stands
-  on all 17s from a 4-deck shoe, revealing one card at a time. Keys: Enter, H, S, D, B
+- **Blackjack**: play against a CPU dealer and keep a record of wins, losses and pushes
+  (saved between visits; Reset asks twice). Hit or stand; big hand totals turn green at
+  21 and red on a bust. The dealer draws to 16 and stands on all 17s from a 4-deck
+  shoe, revealing one card at a time. Keys: Enter, H, S
 
 ## Themes
 Tap the sliders button (top right) to pick a theme. The choice applies to every

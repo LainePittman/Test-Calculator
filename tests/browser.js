@@ -476,28 +476,27 @@ async function stackDeck(p, order, extra = {}) {
     const card = r => ({ rank: r, suit: r === '10' ? '♥' : '♠' });
     const filler = Array(80).fill('5').map(card);
     const shoe = [...filler, ...order.split(' ').map(card).reverse()];
-    localStorage.setItem('blackjack', JSON.stringify({ game: { shoe, ...extra }, bet: extra.bet ?? 100 }));
+    localStorage.setItem('blackjack', JSON.stringify({ game: { shoe, ...extra } }));
   }, { order, extra });
   await p.reload();
   await openTool(p, 'blackjack');
 }
 const faceUp = (p, who) => p.$$eval(`#bj-${who}-cards .card`, cs => cs.map(c => c.classList.contains('back') ? '?' : c.querySelector('.card-rank').textContent).join(' '));
 const bjMessage = p => p.textContent('#bj-message');
+const bjRecord = async p => [await p.textContent('#bj-won'), await p.textContent('#bj-lost'), await p.textContent('#bj-pushed')].join('/');
+const totalBadge = (p, who) => p.$eval(`#bj-${who}-total`, t => {
+  const cs = getComputedStyle(t);
+  return { text: t.textContent, size: parseFloat(cs.fontSize), bg: cs.backgroundColor, cls: t.className, shown: cs.visibility !== 'hidden' };
+});
 
-suite('blackjack: betting with chips', async p => {
+suite('blackjack: no chips, just deal', async p => {
   await openTool(p, 'blackjack');
   assert.strictEqual(await p.textContent('#tool-title'), 'Blackjack');
-  assert.strictEqual(await bjMessage(p), 'Place your bet');
-  assert.strictEqual(await p.textContent('#bj-bankroll'), '1,000');
-  assert.strictEqual(await p.textContent('#bj-bet'), '25');
-  await p.click('[data-chip="50"]');
-  assert.strictEqual(await p.textContent('#bj-bet'), '75');
-  await p.click('#bj-clear');
-  assert.strictEqual(await p.textContent('#bj-bet'), '0');
-  assert.ok(await p.isDisabled('#bj-deal'), 'cannot deal a zero bet');
-  await p.click('[data-chip="100"]');
-  assert.ok(!(await p.isDisabled('#bj-deal')));
-  await shot(p, 'blackjack-betting-classic');
+  assert.strictEqual(await bjMessage(p), 'Tap Deal to play');
+  assert.strictEqual(await p.$$eval('[data-chip], #bj-bankroll, #bj-bet, #bj-double', e => e.length), 0, 'no chip controls');
+  assert.strictEqual(await bjRecord(p), '0/0/0');
+  assert.ok(!(await totalBadge(p, 'player')).shown, 'no total before the deal');
+  await shot(p, 'blackjack-ready-classic');
 });
 
 suite('blackjack: a hand, hole card hidden until the dealer plays', async p => {
@@ -505,20 +504,44 @@ suite('blackjack: a hand, hole card hidden until the dealer plays', async p => {
   await p.click('#bj-deal');
   assert.strictEqual(await faceUp(p, 'player'), '10 7');
   assert.strictEqual(await faceUp(p, 'dealer'), '9 ?', 'hole card face down');
-  assert.strictEqual(await p.textContent('#bj-dealer-total'), '9');
-  assert.strictEqual(await p.textContent('#bj-bankroll'), '900');
+  assert.strictEqual(await p.textContent('#bj-dealer-total'), '9', 'dealer total counts only the face-up card');
   assert.strictEqual(await bjMessage(p), 'Hit or stand?');
+  assert.ok(!(await p.isVisible('#bj-deal')), 'no Deal button mid-hand');
   await p.click('#bj-hit');
   assert.strictEqual(await p.textContent('#bj-player-total'), '19');
   await shot(p, 'blackjack-playing-classic');
   await p.click('#bj-stand');
   assert.strictEqual(await faceUp(p, 'dealer'), '9 8');
-  assert.strictEqual(await p.textContent('#bj-bankroll'), '900', 'result held back while the dealer plays');
+  assert.strictEqual(await bjRecord(p), '0/0/0', 'record waits for the dealer to finish');
   await p.clock.runFor(1000);
-  assert.strictEqual(await bjMessage(p), 'You win! +100');
-  assert.strictEqual(await p.textContent('#bj-bankroll'), '1,100');
-  assert.strictEqual(await p.textContent('#bj-record'), '1W 0L 0P');
-  assert.ok(await p.isVisible('#bj-again'));
+  assert.strictEqual(await bjMessage(p), 'You win!');
+  assert.strictEqual(await bjRecord(p), '1/0/0');
+  assert.strictEqual(await p.textContent('#bj-deal'), 'Deal again');
+});
+
+suite('blackjack: totals are big and color-coded', async p => {
+  await stackDeck(p, '5 9 6 8 K 10'); // you 5 6 → K = 21
+  await p.click('#bj-deal');
+  const eleven = await totalBadge(p, 'player');
+  assert.strictEqual(eleven.text, '11');
+  assert.ok(eleven.size >= 24, `total is ${eleven.size}px`);
+  assert.notStrictEqual(eleven.bg, 'rgba(0, 0, 0, 0)', 'total sits on a solid badge');
+  await p.click('#bj-hit');
+  const twentyOne = await totalBadge(p, 'player');
+  assert.strictEqual(twentyOne.text, '21');
+  assert.match(twentyOne.cls, /twenty-one/);
+  assert.notStrictEqual(twentyOne.bg, eleven.bg, '21 changes color');
+
+  await stackDeck(p, '10 7 6 10 K');
+  await setTheme(p, 'pixel');
+  await p.click('#bj-deal');
+  assert.ok((await totalBadge(p, 'player')).size >= 16, 'pixel totals are large for the pixel font');
+  await p.click('#bj-hit');
+  const bust = await totalBadge(p, 'player');
+  assert.strictEqual(bust.text, '26');
+  assert.match(bust.cls, /bust/);
+  await p.clock.runFor(700);
+  await shot(p, 'blackjack-bust-pixel');
 });
 
 suite('blackjack: the CPU dealer draws one card at a time', async p => {
@@ -534,52 +557,62 @@ suite('blackjack: the CPU dealer draws one card at a time', async p => {
   assert.strictEqual(await faceUp(p, 'dealer'), '6 5 3 4');
   assert.strictEqual(await p.textContent('#bj-dealer-total'), '18');
   await p.clock.runFor(600);
-  assert.strictEqual(await bjMessage(p), 'You win! +100');
+  assert.strictEqual(await bjMessage(p), 'You win!');
 });
 
-suite('blackjack: bust, dealer blackjack, natural blackjack pays 3:2', async p => {
+suite('blackjack: bust, dealer blackjack, natural blackjack, push', async p => {
   await stackDeck(p, '10 7 6 10 K');
   await p.click('#bj-deal');
   await p.click('#bj-hit');
   await p.clock.runFor(700);
-  assert.strictEqual(await bjMessage(p), 'Bust! −100');
+  assert.strictEqual(await bjMessage(p), 'Bust! Dealer wins');
   assert.strictEqual(await faceUp(p, 'dealer'), '7 10', 'hole card shown after you bust');
 
   await stackDeck(p, '10 A 9 K');
   await p.click('#bj-deal');
   await p.clock.runFor(1200);
-  assert.strictEqual(await bjMessage(p), 'Dealer has blackjack −100');
+  assert.strictEqual(await bjMessage(p), 'Dealer has blackjack');
 
-  await stackDeck(p, 'A 9 K 7', { bet: 25 });
+  await stackDeck(p, 'A 9 K 7');
   await p.click('#bj-deal');
   await p.clock.runFor(1200);
-  assert.strictEqual(await bjMessage(p), 'Blackjack! +37.5');
-  assert.strictEqual(await p.textContent('#bj-bankroll'), '1,037.5');
+  assert.strictEqual(await bjMessage(p), 'Blackjack! You win');
   await shot(p, 'blackjack-natural-classic');
+
+  await stackDeck(p, '10 10 8 8');
+  await p.click('#bj-deal');
+  await p.click('#bj-stand');
+  await p.clock.runFor(1000);
+  assert.strictEqual(await bjMessage(p), 'Push: a tie');
+  assert.strictEqual(await bjRecord(p), '0/0/1');
 });
 
-suite('blackjack: double down', async p => {
-  await stackDeck(p, '6 10 5 7 10');
-  await p.click('#bj-deal');
-  await p.click('#bj-double');
-  assert.strictEqual(await p.textContent('#bj-bet'), '200');
-  assert.strictEqual(await faceUp(p, 'player'), '6 5 10');
-  await p.clock.runFor(1200);
-  assert.strictEqual(await bjMessage(p), 'You win! +200');
-  assert.strictEqual(await p.textContent('#bj-bankroll'), '1,200');
+suite('blackjack: record adds up and resets only on a second tap', async p => {
+  await stackDeck(p, '10 9 7 8 2 A 9 K 7 10 7 6 10 K');
+  await p.click('#bj-deal'); await p.click('#bj-hit'); await p.click('#bj-stand'); await p.clock.runFor(1000); // win
+  await p.click('#bj-deal'); await p.clock.runFor(1200);                                                    // blackjack
+  await p.click('#bj-deal'); await p.click('#bj-hit'); await p.clock.runFor(700);                           // bust
+  assert.strictEqual(await bjRecord(p), '2/1/0');
+  await p.click('#bj-reset');
+  assert.strictEqual(await p.textContent('#bj-reset'), 'Sure?');
+  assert.strictEqual(await bjRecord(p), '2/1/0', 'first tap only asks');
+  await p.clock.runFor(3500);
+  assert.strictEqual(await p.textContent('#bj-reset'), 'Reset', 'the question times out');
+  await p.click('#bj-reset');
+  await p.click('#bj-reset');
+  assert.strictEqual(await bjRecord(p), '0/0/0');
+  await p.reload();
+  await openTool(p, 'blackjack');
+  assert.strictEqual(await bjRecord(p), '0/0/0', 'reset is saved');
 });
 
-suite('blackjack: out of chips, then new chips', async p => {
-  await stackDeck(p, '10 10 6 9 K', { bankroll: 100 });
-  await p.click('#bj-deal');
-  await p.click('#bj-hit');
-  await p.clock.runFor(700);
-  assert.ok(await p.isVisible('#bj-refill'));
-  assert.ok(!(await p.isVisible('#bj-again')));
-  await shot(p, 'blackjack-broke-classic');
-  await p.click('#bj-refill');
-  assert.strictEqual(await p.textContent('#bj-bankroll'), '1,000');
-  assert.strictEqual(await bjMessage(p), 'Place your bet');
+suite('blackjack: keeps the record from the chip version', async p => {
+  await p.evaluate(() => localStorage.setItem('blackjack', JSON.stringify({
+    game: { bankroll: 1150, phase: 'betting', stats: { won: 4, lost: 2, pushed: 1 } }, bet: 100 })));
+  await p.reload();
+  await openTool(p, 'blackjack');
+  assert.strictEqual(await bjRecord(p), '4/2/1');
+  assert.strictEqual(await bjMessage(p), 'Tap Deal to play');
 });
 
 suite('blackjack: a hand survives closing the app', async p => {
@@ -592,16 +625,16 @@ suite('blackjack: a hand survives closing the app', async p => {
   assert.strictEqual(await p.textContent('#bj-player-total'), '19');
 });
 
-suite('blackjack: keyboard (Enter, H, S, B)', async p => {
+suite('blackjack: keyboard (Enter, H, S)', async p => {
   await stackDeck(p, '10 9 7 8 2');
   await p.evaluate(() => document.activeElement.blur());
   await p.keyboard.press('Enter');
   await p.keyboard.press('h');
   await p.keyboard.press('s');
   await p.clock.runFor(1000);
-  assert.strictEqual(await bjMessage(p), 'You win! +100');
-  await p.keyboard.press('b');
-  assert.strictEqual(await bjMessage(p), 'Place your bet');
+  assert.strictEqual(await bjMessage(p), 'You win!');
+  await p.keyboard.press('Enter');
+  assert.strictEqual(await bjMessage(p), 'Hit or stand?');
 });
 
 for (const id of ['classic', 'pixel']) {
@@ -619,10 +652,12 @@ for (const id of ['classic', 'pixel']) {
     assert.ok(await fits(), 'eight cards fit across the table');
     await noHorizontalScroll(p);
     await fitsInViewport(p, '#bj-stand');
+    await p.clock.runFor(1000);
     await shot(p, `blackjack-${id}`);
     await p.setViewportSize({ width: 320, height: 568 });
     assert.ok(await fits(), 'eight cards fit on a small phone');
     await noHorizontalScroll(p);
+    await oneLine(p, '.bj-stat span');
     await p.locator('#bj-stand').scrollIntoViewIfNeeded();
     await fitsInViewport(p, '#bj-stand');
     await shot(p, `blackjack-small-${id}`);

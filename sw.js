@@ -1,6 +1,6 @@
 // Offline support: cache the app's files on install and serve them cache-first.
 // Bump CACHE whenever the file list or file contents change.
-const CACHE = 'pocket-tools-v7';
+const CACHE = 'pocket-tools-v8';
 const ASSETS = [
   './', 'index.html', 'style.css', 'themes.js', 'app.js',
   'lib/store.js', 'lib/format.js', 'lib/fit.js', 'lib/calculator.js', 'lib/stopwatch.js', 'lib/timer.js', 'lib/units.js', 'lib/blackjack.js',

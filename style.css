@@ -53,6 +53,7 @@
   --card-red: #d70015;
   --card-back: #ff9f0a;
   --card-radius: 8px;
+  --total-size: 1.9rem;
   --gap: 12px;
   color-scheme: dark;
 }
@@ -100,6 +101,7 @@
   --card-red: #b13e53;
   --card-back: #ef7d57;
   --card-radius: 0;
+  --total-size: 1.1rem;
 }
 
 /* ==== Base ============================================================== */
@@ -521,16 +523,35 @@ input.conv-value[aria-invalid="true"] { border-bottom-color: var(--bad); }
   border-radius: var(--tile-radius);
   background: var(--surface);
 }
-.bj-hand { display: flex; flex-direction: column; gap: 8px; }
+.bj-hand { display: flex; flex-direction: column; gap: 10px; }
 .bj-label {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  min-height: calc(var(--total-size) * 1.5);
   color: var(--muted);
   font-size: var(--tab-font);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
-.bj-total { color: var(--text); font-variant-numeric: tabular-nums; }
+/* Hand totals: big, solid badges that turn green at 21 and red on a bust */
+.bj-total {
+  min-width: 2.4em;
+  padding: 0.12em 0.45em;
+  border-radius: var(--radius);
+  background: var(--btn);
+  color: var(--text);
+  font-size: var(--total-size);
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.25;
+  text-align: center;
+  text-transform: none;
+  font-variant-numeric: tabular-nums;
+}
+.bj-total:empty { visibility: hidden; }
+.bj-total.twenty-one { background: var(--good); color: var(--accent-text); }
+.bj-total.bust { background: var(--bad); color: var(--accent-text); }
 .bj-message {
   min-height: 1.5em;
   text-align: center;
@@ -541,17 +562,35 @@ input.conv-value[aria-invalid="true"] { border-bottom-color: var(--bad); }
 .bj-message.good { color: var(--good); }
 .bj-message.bad { color: var(--bad); }
 .bj-message.even { color: var(--muted); }
-.bj-bank {
+.bj-record {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.bj-stat {
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding-inline: 4px;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
   color: var(--muted);
+  font-size: var(--tab-font);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.bj-stat strong {
+  color: var(--text);
+  font-size: var(--title-size);
+  font-weight: 700;
+  letter-spacing: 0;
   font-variant-numeric: tabular-nums;
 }
-.bj-bank strong { color: var(--text); font-weight: 600; }
-.bj-controls { display: flex; flex-direction: column; gap: 12px; flex: none; }
-.bj-controls .chip:disabled { opacity: 0.4; }
+.bj-stat.win strong { color: var(--good); }
+.bj-stat.lose strong { color: var(--bad); }
+.bj-reset { font-size: 0.85rem; padding: 8px 12px; }
+.bj-reset.confirm { background: var(--bad); color: var(--accent-text); }
+#bj-playing { flex: none; }
 
 /* ==== Theme picker sheet ================================================ */
 .sheet-backdrop {
@@ -688,7 +727,14 @@ input.conv-value[aria-invalid="true"] { border-bottom-color: var(--bad); }
 /* Chunky, frame-by-frame motion to match the 8-bit look */
 :root[data-app-theme="pixel"] .card.new { animation-timing-function: steps(4); }
 :root[data-app-theme="pixel"] .card.flip { animation-timing-function: steps(3); }
-:root[data-app-theme="pixel"] .bj-bank { font-size: 0.6rem; line-height: 1.6; }
+:root[data-app-theme="pixel"] .bj-total { font-weight: 400; line-height: 1.6; }
+:root[data-app-theme="pixel"] .bj-total {
+  clip-path: polygon(0 4px, 4px 4px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px,
+    100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%,
+    4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px));
+}
+:root[data-app-theme="pixel"] .bj-stat strong { font-weight: 400; line-height: 1.6; }
+:root[data-app-theme="pixel"] .bj-reset { font-size: 0.5rem; }
 :root[data-app-theme="pixel"] .bj-message { line-height: 1.6; }
 :root[data-app-theme="pixel"] .meter-fill {
   /* Chunky 8-bit segments */
