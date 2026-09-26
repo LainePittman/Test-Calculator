@@ -23,6 +23,7 @@ function serve() {
 }
 
 const suites = [];
+const THEMES = ['classic', 'pixel', 'deco'];
 const suite = (name, fn) => suites.push({ name, fn });
 
 // ---- Helpers ----------------------------------------------------------------
@@ -62,7 +63,9 @@ async function fullyVisible(p, selector) {
 async function oneLine(p, selector) {
   const ok = await p.$$eval(selector, els => els.every(e => {
     const lh = parseFloat(getComputedStyle(e).lineHeight) || parseFloat(getComputedStyle(e).fontSize) * 1.3;
-    return e.getBoundingClientRect().height < lh * 2 + parseFloat(getComputedStyle(e).paddingTop) * 2;
+    const cs = getComputedStyle(e);
+    const content = e.getBoundingClientRect().height - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    return content < lh * 1.5;
   }));
   assert.ok(ok, `${selector} wraps onto two lines`);
 }
@@ -101,6 +104,30 @@ suite('shell: theme picker switches, persists and closes', async p => {
   assert.ok(!(await p.isVisible('#settings')));
 });
 
+suite('shell: Art Deco theme loads its fonts and styles every tool', async p => {
+  await setTheme(p, 'deco');
+  assert.strictEqual(await theme(p), 'deco');
+  const fonts = await p.evaluate(async () => {
+    await document.fonts.load('20px "Poiret One"');
+    await document.fonts.load('20px "Josefin Sans"');
+    return [...document.fonts].filter(f => f.status === 'loaded').map(f => f.family.replace(/"/g, ''));
+  });
+  assert.ok(fonts.includes('Poiret One') && fonts.includes('Josefin Sans'), `fonts: ${fonts}`);
+  assert.strictEqual(await p.getAttribute('meta[name="theme-color"]', 'content'), '#0b0d12');
+  for (const id of ['calculator', 'stopwatch', 'timer', 'convert', 'blackjack']) {
+    await openTool(p, id);
+    const title = await p.$eval('#tool-title', t => getComputedStyle(t).fontFamily);
+    assert.match(title, /Poiret One/, `${id} title uses the display font`);
+    const framed = await p.$$eval(`#tool-${id} :is(.btn, .chip, .readout)`, els =>
+      els.some(e => getComputedStyle(e).boxShadow.includes('212, 175, 55')));
+    assert.ok(framed, `${id} has gold frames`);
+  }
+  await p.click('#settings-btn');
+  assert.strictEqual(await p.$$eval('.theme-option', o => o.length), 3);
+  await oneLine(p, '.theme-option .theme-name');
+  await shot(p, 'theme-picker-deco');
+});
+
 suite('shell: keeps a theme saved by the calculator-only version', async p => {
   await p.evaluate(() => { localStorage.clear(); localStorage.setItem('calc-theme', 'pixel'); });
   await p.reload();
@@ -108,7 +135,7 @@ suite('shell: keeps a theme saved by the calculator-only version', async p => {
 });
 
 // ---- Calculator -----------------------------------------------------------------
-for (const id of ['classic', 'pixel']) {
+for (const id of THEMES) {
   suite(`calculator (${id}): math, long numbers, layout`, async p => {
     await setTheme(p, id);
     await press(p, '[data-digit="7"]', '[data-op="*"]', '[data-digit="6"]', '[data-action="equals"]');
@@ -135,7 +162,7 @@ suite('calculator: keyboard input', async p => {
 
 suite('calculator: fits a short phone screen', async p => {
   await p.setViewportSize({ width: 320, height: 568 });
-  for (const id of ['classic', 'pixel']) {
+  for (const id of THEMES) {
     await setTheme(p, id);
     await fitsInViewport(p, '#tool-calculator [data-action="equals"]');
     await noHorizontalScroll(p);
@@ -222,7 +249,7 @@ suite('stopwatch: keyboard (space, L, R)', async p => {
   assert.strictEqual(await p.textContent('#sw-time'), '00:00.00');
 });
 
-for (const id of ['classic', 'pixel']) {
+for (const id of THEMES) {
   suite(`stopwatch (${id}): hour-long times fit, layout`, async p => {
     await p.evaluate(() => localStorage.setItem('stopwatch',
       JSON.stringify({ running: false, banked: 3_723_450, splits: [1_000_000, 2_500_000] })));
@@ -339,7 +366,7 @@ suite('timer: keyboard', async p => {
   assert.ok(await p.isVisible('#timer-setup'));
 });
 
-for (const id of ['classic', 'pixel']) {
+for (const id of THEMES) {
   suite(`timer (${id}): layout`, async p => {
     await setTheme(p, id);
     await openTool(p, 'timer');
@@ -446,7 +473,7 @@ suite('convert: typing in the amount does not reach other tools', async p => {
   assert.strictEqual(await p.textContent('#calc-result'), '0');
 });
 
-for (const id of ['classic', 'pixel']) {
+for (const id of THEMES) {
   suite(`convert (${id}): layout`, async p => {
     await setTheme(p, id);
     await openTool(p, 'convert');
@@ -637,7 +664,7 @@ suite('blackjack: keyboard (Enter, H, S)', async p => {
   assert.strictEqual(await bjMessage(p), 'Hit or stand?');
 });
 
-for (const id of ['classic', 'pixel']) {
+for (const id of THEMES) {
   suite(`blackjack (${id}): long hands fit, layout`, async p => {
     await stackDeck(p, 'A 10 A 7 A A 2 2 2 2');
     await setTheme(p, id);
@@ -667,7 +694,7 @@ for (const id of ['classic', 'pixel']) {
 suite('shell: tab labels are readable on phones', async p => {
   for (const [w, h] of [[390, 844], [320, 568]]) {
     await p.setViewportSize({ width: w, height: h });
-    for (const id of ['classic', 'pixel']) {
+    for (const id of THEMES) {
       await setTheme(p, id);
       const labels = await p.$$eval('.tab span', spans => spans
         .filter(s => s.offsetParent && s.getBoundingClientRect().width > 1)

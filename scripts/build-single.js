@@ -6,13 +6,13 @@ const path = require('path');
 
 const root = path.join(__dirname, '..');
 const read = f => fs.readFileSync(path.join(root, f), 'utf8');
-const font = fs.readFileSync(path.join(root, 'fonts/PressStart2P-latin.woff2')).toString('base64');
+const dataUri = file => `data:font/woff2;base64,${fs.readFileSync(path.join(root, file)).toString('base64')}`;
 
 let html = read('index.html')
   .replace(/^\s*<link rel="(manifest|icon|apple-touch-icon|preload)"[^>]*>\n/gm, '')
   .replace('<link rel="stylesheet" href="style.css">', () =>
     `<style>\n${read('style.css')
-      .replace('url("fonts/PressStart2P-latin.woff2")', `url("data:font/woff2;base64,${font}")`)
+      .replace(/url\("(fonts\/[^"]+\.woff2)"\)/g, (_, file) => `url("${dataUri(file)}")`)
       // Embedding pages pad the root for phone safe areas; fill the page rather than the screen.
       .replace('height: 100dvh;', 'height: 100%;')}</style>`)
   .replace(/<script src="([^"]+)"><\/script>/g, (_, src) => `<script>\n${read(src)}</script>`);

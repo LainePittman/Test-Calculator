@@ -1,7 +1,19 @@
-/* Press Start 2P by Cody "CodeMan38" Boisclair, SIL Open Font License 1.1 (fonts/OFL.txt). */
+/* Theme fonts, all SIL Open Font License 1.1 (licences in fonts/OFL-*.txt):
+   Press Start 2P (Pixel), Poiret One and Josefin Sans (Art Deco). */
 @font-face {
   font-family: "Press Start 2P";
   src: url("fonts/PressStart2P-latin.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Poiret One";
+  src: url("fonts/PoiretOne-latin.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Josefin Sans";
+  src: url("fonts/JosefinSans-latin.woff2") format("woff2");
+  font-weight: 300 700;
   font-display: swap;
 }
 
@@ -34,6 +46,7 @@
   --field: #1c1c1e;
   --focus: #0a84ff;
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-display: var(--font); /* big numbers and titles */
   --radius: 999px;
   --tile-radius: 14px;
   --sheet-radius: 20px;
@@ -54,6 +67,7 @@
   --card-back: #ff9f0a;
   --card-radius: 8px;
   --total-size: 1.9rem;
+  --gold: #d4af37;
   --gap: 12px;
   color-scheme: dark;
 }
@@ -82,6 +96,7 @@
   --field: #0f101c;
   --focus: #ffcd75;
   --font: "Press Start 2P", ui-monospace, "Courier New", monospace;
+  --font-display: var(--font);
   --radius: 0;
   --tile-radius: 0;
   --sheet-radius: 0;
@@ -102,6 +117,55 @@
   --card-back: #ef7d57;
   --card-radius: 0;
   --total-size: 1.1rem;
+  --gold: #d4af37;
+}
+
+/* Art Deco: black lacquer, gold leaf and cream; geometric type, double gold rules. */
+:root[data-app-theme="deco"] {
+  --bg: #0b0d12;
+  --bar-bg: #07080c;
+  --line: #4a3f26;
+  --text: #f1e6cc;
+  --muted: #a8977a;
+  --readout: #e9c46a;
+  --btn: #161a22;
+  --btn-active: #2a3040;
+  --alt: #e8dcc0;
+  --alt-text: #0b0d12;
+  --alt-active: #fff3d6;
+  --accent: #d4af37;
+  --accent-text: #0b0d12;
+  --accent-active: #f0d27a;
+  --accent-selected-bg: #0b0d12;
+  --accent-selected-text: #e9c46a;
+  --good: #7cc49a;
+  --bad: #e07a6a;
+  --surface: #12151c;
+  --field: #0e1117;
+  --focus: #f0d27a;
+  --font: "Josefin Sans", "Century Gothic", Futura, "Trebuchet MS", sans-serif;
+  --font-display: "Poiret One", "Josefin Sans", "Century Gothic", Futura, sans-serif;
+  --radius: 2px;
+  --tile-radius: 2px;
+  --sheet-radius: 2px;
+  --title-size: 1.35rem;
+  --tab-font: 0.66rem;
+  --result-size: 5.2rem;
+  --result-weight: 400;
+  --small-size: 1.3rem;
+  --btn-font: 2.1rem;
+  --alt-font: 1.25rem;
+  --accent-font: 2.2rem;
+  --control-font: 1rem;
+  --clock-size: min(5rem, 15cqw);
+  --value-size: 2.7rem;
+  --card-bg: #f4ead2;
+  --card-ink: #14161c;
+  --card-red: #9e2b25;
+  --card-back: #1f4d45;
+  --card-radius: 3px;
+  --total-size: 1.9rem;
+  --gold: #d4af37;
 }
 
 /* ==== Base ============================================================== */
@@ -143,6 +207,7 @@ html, body {
 
 .tool-title {
   margin: 0;
+  font-family: var(--font-display);
   font-size: var(--title-size);
   font-weight: 600;
 }
@@ -239,6 +304,7 @@ html, body {
   overflow: hidden;
 }
 .readout-main {
+  font-family: var(--font-display);
   font-size: var(--result-size);
   font-weight: var(--result-weight);
   line-height: 1.1;
@@ -262,6 +328,7 @@ html, body {
   grid-template-columns: repeat(var(--cols), 1fr);
   gap: var(--gap);
 }
+.keypad .btn:not(.alt, .accent) { font-family: var(--font-display); } /* digits */
 .keypad .btn {
   height: min(
     calc((100cqw - 32px - (var(--cols) - 1) * var(--gap)) / var(--cols)),
@@ -370,6 +437,7 @@ html, body {
 }
 .card.red { color: var(--card-red); }
 .card-rank {
+  font-family: var(--font-display);
   position: absolute;
   top: 6%;
   left: 9%;
@@ -536,6 +604,7 @@ input.conv-value[aria-invalid="true"] { border-bottom-color: var(--bad); }
 }
 /* Hand totals: big, solid badges that turn green at 21 and red on a bust */
 .bj-total {
+  font-family: var(--font-display);
   min-width: 2.4em;
   padding: 0.12em 0.45em;
   border-radius: var(--radius);
@@ -580,6 +649,7 @@ input.conv-value[aria-invalid="true"] { border-bottom-color: var(--bad); }
   letter-spacing: 0.06em;
 }
 .bj-stat strong {
+  font-family: var(--font-display);
   color: var(--text);
   font-size: var(--title-size);
   font-weight: 700;
@@ -619,7 +689,7 @@ input.conv-value[aria-invalid="true"] { border-bottom-color: var(--bad); }
 
 .theme-options {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
   gap: 12px;
 }
 
@@ -651,6 +721,14 @@ input.conv-value[aria-invalid="true"] { border-bottom-color: var(--bad); }
   font-size: 0.7rem;
 }
 .theme-option[data-theme-id="pixel"] .swatch i { border-radius: 0; }
+.theme-option[data-theme-id="deco"] .theme-name {
+  font-family: "Poiret One", "Century Gothic", sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+.theme-option[data-theme-id="deco"] .swatch i { border-radius: 0; transform: rotate(45deg) scale(0.8); }
 
 .sheet-done {
   padding: 14px;
@@ -746,6 +824,86 @@ input.conv-value[aria-invalid="true"] { border-bottom-color: var(--bad); }
   outline: none;
   box-shadow: inset 0 0 0 4px var(--focus);
 }
+
+/* ==== Art Deco component overrides ===================================== */
+:root[data-app-theme="deco"] {
+  --hair: rgb(212 175 55 / 0.55);   /* gold hairline */
+  --hair-dim: rgb(212 175 55 / 0.22);
+}
+/* Double gold rules on the title bar and tab bar */
+:root[data-app-theme="deco"] .topbar { border-bottom: 3px double var(--hair); margin-inline: 12px; padding-left: 8px; }
+:root[data-app-theme="deco"] .tabbar { border-top: 3px double var(--hair); }
+:root[data-app-theme="deco"] .tool-title { letter-spacing: 0.14em; text-transform: uppercase; font-weight: 400; }
+:root[data-app-theme="deco"] .tool-title::before,
+:root[data-app-theme="deco"] .tool-title::after { content: "◆"; margin-inline: 0.5em; font-size: 0.45em; vertical-align: 0.35em; color: var(--gold); }
+:root[data-app-theme="deco"] .tool-title::before { margin-left: 0; }
+
+/* Keys: thin double gold frame; gold and cream keys get a dark inner line */
+:root[data-app-theme="deco"] :is(.btn, .chip) {
+  box-shadow: inset 0 0 0 1px var(--hair), inset 0 0 0 4px var(--btn), inset 0 0 0 5px var(--hair-dim);
+  transition: none;
+}
+:root[data-app-theme="deco"] :is(.btn.accent, .btn.alt, .btn.danger, .chip[aria-pressed="true"], .sheet-done) {
+  /* a fine dark line just inside the edge of gold and cream keys */
+  box-shadow: none;
+  outline: 1px solid rgb(11 13 18 / 0.4);
+  outline-offset: -4px;
+}
+:root[data-app-theme="deco"] :is(.btn, .chip, .sheet-done):focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+:root[data-app-theme="deco"] .btn.accent.selected { box-shadow: inset 0 0 0 1px var(--gold), inset 0 0 0 4px var(--bg), inset 0 0 0 5px var(--hair); }
+:root[data-app-theme="deco"] :is(.controls .btn, .btn.action, .chip, .sheet-done, .bj-stat) {
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+:root[data-app-theme="deco"] .keypad .btn.accent { font-weight: 300; }
+:root[data-app-theme="deco"] .chips.even .chip { letter-spacing: 0.06em; font-size: 0.8rem; white-space: nowrap; padding-inline: 2px; }
+/* Poiret One's 0 reads like an O at small sizes: keep counts in the sturdier face */
+:root[data-app-theme="deco"] .bj-stat strong { font-family: var(--font); font-weight: 600; letter-spacing: 0; }
+
+/* Readouts: a gold-framed panel with a faint sunburst rising from the bottom */
+:root[data-app-theme="deco"] .readout {
+  padding: 14px;
+  background:
+    repeating-conic-gradient(from -90deg at 50% 110%, rgb(212 175 55 / 0.075) 0deg 3deg, transparent 3deg 9deg),
+    var(--surface);
+  box-shadow: inset 0 0 0 1px var(--hair), inset 0 0 0 5px var(--surface), inset 0 0 0 6px var(--hair-dim);
+}
+:root[data-app-theme="deco"] .readout-sub { letter-spacing: 0.08em; }
+
+/* Tabs: selected tab gets a gold diamond */
+:root[data-app-theme="deco"] .tab { position: relative; letter-spacing: 0.06em; }
+:root[data-app-theme="deco"] .tab[aria-selected="true"]::before {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  background: var(--gold);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+:root[data-app-theme="deco"] .field { box-shadow: inset 0 0 0 1px var(--hair-dim); }
+:root[data-app-theme="deco"] .list li { border-bottom-color: var(--hair-dim); }
+:root[data-app-theme="deco"] .meter { height: 6px; box-shadow: 0 0 0 1px var(--hair); }
+:root[data-app-theme="deco"] .sheet { box-shadow: inset 0 0 0 1px var(--hair), inset 0 0 0 5px var(--surface), inset 0 0 0 6px var(--hair-dim); }
+:root[data-app-theme="deco"] .sheet h2 { font-family: var(--font-display); font-weight: 400; letter-spacing: 0.14em; text-transform: uppercase; }
+
+/* Cards: cream with a gold border; backs are an emerald fan with gold rays */
+:root[data-app-theme="deco"] .card { box-shadow: inset 0 0 0 1px var(--gold), inset 0 0 0 3px var(--card-bg), inset 0 0 0 4px rgb(212 175 55 / 0.5), 0 2px 6px rgb(0 0 0 / 0.5); }
+:root[data-app-theme="deco"] .cards > .card:not(.back) + .card:not(.back) {
+  box-shadow: inset 0 0 0 1px var(--gold), inset 0 0 0 3px var(--card-bg), inset 0 0 0 4px rgb(212 175 55 / 0.5), -3px 0 6px rgb(0 0 0 / 0.45);
+}
+:root[data-app-theme="deco"] .card.back {
+  background:
+    repeating-conic-gradient(from -60deg at 50% 100%, var(--gold) 0deg 2deg, transparent 2deg 12deg) 0 0 / 100% 100% no-repeat,
+    var(--card-back);
+  box-shadow: inset 0 0 0 3px var(--card-bg), inset 0 0 0 5px var(--gold), 0 2px 6px rgb(0 0 0 / 0.5);
+}
+:root[data-app-theme="deco"] .card-rank { font-weight: 400; }
+:root[data-app-theme="deco"] .bj-total { box-shadow: inset 0 0 0 1px var(--hair); }
+:root[data-app-theme="deco"] :is(.bj-total.bust, .bj-total.twenty-one) { box-shadow: none; }
+:root[data-app-theme="deco"] .bj-label { letter-spacing: 0.18em; }
 
 @media (prefers-reduced-motion: reduce) {
   .btn { transition: none; }

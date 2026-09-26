@@ -6,12 +6,23 @@ const root = path.join(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
 const assets = [...sw.matchAll(/'([^']+\.(?:js|css|html|svg|woff2|webmanifest))'/g)].map(m => m[1]);
+const css = fs.readFileSync(path.join(root, 'style.css'), 'utf8');
 const loaded = [...html.matchAll(/(?:src|href)="([^"#:]+)"/g)].map(m => m[1]);
+const cssFiles = [...css.matchAll(/url\("([^"#:]+)"\)/g)].map(m => m[1]);
 
 module.exports = test => {
   test('app: every file the page loads is cached for offline use', () => {
     const missing = loaded.filter(f => !assets.includes(f));
     assert.deepStrictEqual(missing, []);
+  });
+
+  test('app: every font the stylesheet uses is cached and has its licence', () => {
+    assert.ok(cssFiles.length >= 3, 'stylesheet fonts found');
+    assert.deepStrictEqual(cssFiles.filter(f => !assets.includes(f)), []);
+    for (const f of cssFiles) {
+      const family = path.basename(f).split('-')[0];
+      assert.ok(fs.existsSync(path.join(root, 'fonts', `OFL-${family}.txt`)), `licence for ${family}`);
+    }
   });
 
   test('app: every cached file exists', () => {

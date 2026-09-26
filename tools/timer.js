@@ -14,7 +14,7 @@
   const save = () => Store.set(STORE_KEY, { timer, entry, lastEntry });
   const pad = n => String(n).padStart(2, '0');
 
-  // ---- Sound: soft sine beeps in Classic, square-wave chiptune in Pixel ----
+  // ---- Sound: each theme defines its own alarm (see themes.js) ----
   function unlockAudio() {
     try {
       audio ??= new (window.AudioContext || window.webkitAudioContext)();
@@ -24,21 +24,22 @@
 
   function beep() {
     if (!audio) return;
-    const pixel = document.documentElement.dataset.appTheme === 'pixel';
+    const { wave, notes, gain: level } = Themes.resolve(document.documentElement.dataset.appTheme).sound;
     const t0 = audio.currentTime;
-    for (let i = 0; i < 3; i++) {
+    const gap = notes.length > 2 ? 0.22 : 0.4; // chimes ring longer
+    notes.forEach((freq, i) => {
       const osc = audio.createOscillator();
       const gain = audio.createGain();
-      osc.type = pixel ? 'square' : 'sine';
-      osc.frequency.value = pixel ? 988 : 880;
-      const t = t0 + i * 0.22;
+      osc.type = wave;
+      osc.frequency.value = freq;
+      const t = t0 + i * gap;
       gain.gain.setValueAtTime(0.0001, t);
-      gain.gain.exponentialRampToValueAtTime(pixel ? 0.12 : 0.35, t + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+      gain.gain.exponentialRampToValueAtTime(level, t + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + gap * 0.8);
       osc.connect(gain).connect(audio.destination);
       osc.start(t);
-      osc.stop(t + 0.18);
-    }
+      osc.stop(t + gap);
+    });
   }
 
   function startAlarm() {

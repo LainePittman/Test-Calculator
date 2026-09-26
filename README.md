@@ -25,7 +25,12 @@ screen, and works offline.
 Tap the sliders button (top right) to pick a theme. The choice applies to every
 tool and is remembered on the device.
 - **Classic**: black with round keys and orange accents
-- **Pixel**: 8-bit palette, square notched keys, pixel font, LCD-style readouts
+- **Pixel**: 8-bit palette, square notched keys, pixel font, LCD-style readouts,
+  chiptune timer beep
+- **Art Deco**: black lacquer, gold and cream; Poiret One and Josefin Sans type, gold
+  sunburst readouts, double gold rules, emerald fan card backs, two-tone chime alarm
+
+Each theme also sets the timer's alarm sound (`sound` in `themes.js`).
 
 ## Run locally
 ```sh
@@ -54,7 +59,8 @@ SCREENSHOTS=1 npm run test:browser   # also saves screenshots to test-screenshot
 - `tools/`: one file per tool that connects its panel to its logic
 - `tests/`: unit tests (`*.test.js`) and browser tests (`browser.js`)
 - `scripts/build-single.js`: bundles everything into one HTML file (`npm run build:single`)
-- `sw.js`, `manifest.webmanifest`, `icons/`, `fonts/`: offline support, install, pixel font (SIL OFL)
+- `sw.js`, `manifest.webmanifest`, `icons/`, `fonts/`: offline support, install, theme fonts
+  (all SIL OFL; licences in `fonts/OFL-*.txt`)
 
 ### Adding a tool
 1. Logic in `lib/<tool>.js` with unit tests in `tests/<tool>.test.js`
@@ -64,5 +70,7 @@ SCREENSHOTS=1 npm run test:browser   # also saves screenshots to test-screenshot
 4. Browser tests in `tests/browser.js`; add the new files to `sw.js`
 
 ### Adding a theme
-Add an entry to `themes.js` and a `:root[data-app-theme="<id>"]` block in `style.css`
-that sets every token (the unit tests check none are missing).
+Add an entry to `themes.js` (name, colour, preview swatches, alarm sound) and a
+`:root[data-app-theme="<id>"]` block in `style.css` that sets every token (the unit
+tests check none are missing), plus any component overrides at the end of the file.
+Add its id to `THEMES` in `tests/browser.js` so every tool is tested in it.
