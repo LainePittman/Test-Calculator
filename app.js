@@ -31,6 +31,7 @@
     history.replaceState(null, '', '#' + tool.id);
   }
 
+  window.App = { show };
   for (const tool of tools) tool.init(panel(tool));
   tabbar.style.setProperty('--tab-count', tabs.length);
 
@@ -128,7 +129,8 @@
   // ---- Start ------------------------------------------------------------
   let last = null;
   try { last = localStorage.getItem(LAST_TOOL_KEY); } catch {}
-  show(location.hash.slice(1) || last);
+  // A tool can ask to open first, e.g. a timer that finished while the app was closed.
+  show(tools.find(t => t.needsAttention?.())?.id || location.hash.slice(1) || last);
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     navigator.serviceWorker.register('sw.js');

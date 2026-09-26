@@ -40,6 +40,21 @@ async function fitsInViewport(p, selector) {
   const vh = p.viewportSize().height;
   assert.ok(box && box.y + box.height <= vh + 1, `${selector} is cut off (${box && box.y + box.height} > ${vh})`);
 }
+async function textFits(p, selector) {
+  const fits = await p.$eval(selector, el => {
+    const box = el.parentElement;
+    const cs = getComputedStyle(box);
+    return el.scrollWidth <= box.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) + 1;
+  });
+  assert.ok(fits, `${selector} text overflows its panel`);
+}
+async function oneLine(p, selector) {
+  const ok = await p.$$eval(selector, els => els.every(e => {
+    const lh = parseFloat(getComputedStyle(e).lineHeight) || parseFloat(getComputedStyle(e).fontSize) * 1.3;
+    return e.getBoundingClientRect().height < lh * 2 + parseFloat(getComputedStyle(e).paddingTop) * 2;
+  }));
+  assert.ok(ok, `${selector} wraps onto two lines`);
+}
 async function shot(p, name) {
   if (!process.env.SCREENSHOTS) return;
   fs.mkdirSync(shotsDir, { recursive: true });
@@ -214,6 +229,128 @@ for (const id of ['classic', 'pixel']) {
     await p.setViewportSize({ width: 320, height: 568 });
     await noHorizontalScroll(p);
     await fitsInViewport(p, '#sw-primary');
+  });
+}
+
+// ---- Timer ----------------------------------------------------------------------
+const entryText = p => p.$eval('#timer-entry', e => e.textContent.replace(/\s+/g, ' ').trim());
+async function typeTimer(p, digits) {
+  for (const d of digits) await p.click(`.timer-keypad [data-digit="${d}"]`);
+}
+
+suite('timer: keypad entry, delete and presets', async p => {
+  await openTool(p, 'timer');
+  assert.strictEqual(await entryText(p), '00h 00m 00s');
+  assert.ok(await p.isDisabled('#timer-start'), 'Start disabled at zero');
+  await typeTimer(p, '130');
+  assert.strictEqual(await entryText(p), '00h 01m 30s');
+  assert.ok(!(await p.isDisabled('#timer-start')));
+  await p.click('.timer-keypad [data-action="backspace"]');
+  assert.strictEqual(await entryText(p), '00h 00m 13s');
+  await p.click('[data-preset="300000"]');
+  assert.strictEqual(await entryText(p), '00h 05m 00s');
+  await shot(p, 'timer-setup-classic');
+});
+
+suite('timer: counts down, pauses, resumes, adds a minute', async p => {
+  await openTool(p, 'timer');
+  await typeTimer(p, '130');
+  await p.click('#timer-start');
+  assert.ok(await p.isVisible('#timer-run'));
+  assert.strictEqual(await p.textContent('#timer-left'), '1:30');
+  assert.match(await p.textContent('#timer-status'), /^Ends at /);
+  await p.clock.runFor(30_000);
+  assert.strictEqual(await p.textContent('#timer-left'), '1:00');
+  const progress = await p.$eval('#timer-meter', m => +m.style.getPropertyValue('--progress'));
+  assert.ok(Math.abs(progress - 2 / 3) < 0.01, `progress ${progress}`);
+  await p.click('#timer-toggle');
+  assert.strictEqual(await p.textContent('#timer-status'), 'Paused');
+  assert.strictEqual(await p.textContent('#timer-toggle'), 'Resume');
+  await p.clock.runFor(60_000);
+  assert.strictEqual(await p.textContent('#timer-left'), '1:00', 'holds while paused');
+  await p.click('#timer-toggle');
+  await p.click('#timer-add');
+  assert.strictEqual(await p.textContent('#timer-left'), '2:00');
+  await shot(p, 'timer-running-classic');
+  await p.click('#timer-cancel');
+  assert.ok(await p.isVisible('#timer-setup'));
+  assert.strictEqual(await entryText(p), '00h 01m 30s', 'last length ready again');
+});
+
+suite('timer: rings when done, even from another tool', async p => {
+  await openTool(p, 'timer');
+  await typeTimer(p, '5');
+  await p.click('#timer-start');
+  await openTool(p, 'calculator');
+  await p.clock.runFor(6000);
+  assert.strictEqual(await p.textContent('#tool-title'), 'Timer', 'switched to the timer');
+  assert.strictEqual(await p.textContent('#timer-status'), "Time's up");
+  assert.strictEqual(await p.textContent('#timer-left'), '0:00');
+  assert.ok(await p.$eval('#timer-readout', r => r.classList.contains('alarm')));
+  assert.ok(!(await p.isVisible('#timer-cancel')), 'only Stop is offered');
+  assert.strictEqual(await p.textContent('#timer-toggle'), 'Stop');
+  await shot(p, 'timer-done-classic');
+  await p.click('#timer-add'); // snooze a minute
+  assert.strictEqual(await p.textContent('#timer-left'), '1:00');
+  await p.clock.runFor(61_000);
+  await p.click('#timer-toggle'); // Stop
+  assert.ok(await p.isVisible('#timer-setup'));
+  assert.strictEqual(await entryText(p), '00h 00m 05s');
+});
+
+suite('timer: survives closing the app, and opens if it finished meanwhile', async p => {
+  await openTool(p, 'timer');
+  await typeTimer(p, '100');
+  await p.click('#timer-start');
+  await p.clock.runFor(10_000);
+  await p.reload();
+  assert.strictEqual(await p.textContent('#timer-left'), '0:50');
+  await openTool(p, 'calculator');
+  await p.evaluate(() => {
+    const saved = JSON.parse(localStorage.getItem('timer'));
+    saved.timer.endsAt = Date.now() - 5000;
+    localStorage.setItem('timer', JSON.stringify(saved));
+  });
+  await p.reload();
+  assert.strictEqual(await p.textContent('#tool-title'), 'Timer');
+  assert.strictEqual(await p.textContent('#timer-status'), "Time's up");
+});
+
+suite('timer: keyboard', async p => {
+  await openTool(p, 'timer');
+  await p.evaluate(() => document.activeElement.blur());
+  await p.keyboard.type('15');
+  await p.keyboard.press('Enter');
+  assert.strictEqual(await p.textContent('#timer-left'), '0:15');
+  await p.keyboard.press('Space');
+  assert.strictEqual(await p.textContent('#timer-status'), 'Paused');
+  await p.keyboard.press('Escape');
+  assert.ok(await p.isVisible('#timer-setup'));
+});
+
+for (const id of ['classic', 'pixel']) {
+  suite(`timer (${id}): layout`, async p => {
+    await setTheme(p, id);
+    await openTool(p, 'timer');
+    await typeTimer(p, '13000');
+    await noHorizontalScroll(p);
+    await textFits(p, '#timer-entry');
+    await fitsInViewport(p, '#timer-start');
+    await shot(p, `timer-setup-${id}`);
+    await p.click('#timer-start');
+    assert.strictEqual(await p.textContent('#timer-left'), '1:30:00');
+    await p.clock.runFor(20 * 60_000);
+    await noHorizontalScroll(p);
+    await fitsInViewport(p, '#timer-toggle');
+    await shot(p, `timer-running-${id}`);
+    await p.setViewportSize({ width: 320, height: 568 });
+    await p.click('#timer-cancel');
+    await noHorizontalScroll(p);
+    await textFits(p, '#timer-entry');
+    await oneLine(p, '#timer-presets .chip');
+    await p.locator('#timer-start').scrollIntoViewIfNeeded();
+    await fitsInViewport(p, '#timer-start');
+    await shot(p, `timer-small-${id}`);
   });
 }
 

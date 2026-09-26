@@ -9,6 +9,9 @@ screen, and works offline.
   thousands separators, keyboard support
 - **Stopwatch**: start/stop, laps with fastest and slowest highlighted; keeps
   running while the app is closed (Space, L, R on a keyboard)
+- **Timer**: type a length like a microwave (`5 0 0` = 5 minutes) or tap a preset;
+  pause, +1 minute, and an alarm that beeps and vibrates (a chiptune beep in the
+  Pixel theme). Finishes on time even if the app was closed, and opens to it
 
 ## Themes
 Tap the sliders button (top right) to pick a theme. The choice applies to every

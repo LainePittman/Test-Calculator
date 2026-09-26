@@ -74,6 +74,51 @@
         </div>
         <ol class="list laps" id="sw-laps" aria-label="Laps"></ol>
       </section>
+
+      <!-- Timer -->
+      <section class="tool tool-timer" id="tool-timer" role="tabpanel" aria-labelledby="tab-timer" hidden>
+        <div class="timer-view" id="timer-setup">
+          <div class="readout clock-display">
+            <output class="readout-main clock timer-entry" id="timer-entry" aria-label="Timer length">00h 00m 00s</output>
+          </div>
+          <div class="chips even" id="timer-presets">
+            <button class="chip" type="button" data-preset="60000">1 min</button>
+            <button class="chip" type="button" data-preset="300000">5 min</button>
+            <button class="chip" type="button" data-preset="600000">10 min</button>
+            <button class="chip" type="button" data-preset="1500000">25 min</button>
+          </div>
+          <div class="keypad timer-keypad">
+            <button class="btn" type="button" data-digit="1">1</button>
+            <button class="btn" type="button" data-digit="2">2</button>
+            <button class="btn" type="button" data-digit="3">3</button>
+            <button class="btn" type="button" data-digit="4">4</button>
+            <button class="btn" type="button" data-digit="5">5</button>
+            <button class="btn" type="button" data-digit="6">6</button>
+            <button class="btn" type="button" data-digit="7">7</button>
+            <button class="btn" type="button" data-digit="8">8</button>
+            <button class="btn" type="button" data-digit="9">9</button>
+            <button class="btn" type="button" data-digit="00">00</button>
+            <button class="btn" type="button" data-digit="0">0</button>
+            <button class="btn alt" type="button" data-action="backspace" aria-label="Delete">⌫</button>
+          </div>
+          <button class="btn accent action" id="timer-start" type="button" disabled>Start</button>
+        </div>
+
+        <div class="timer-view" id="timer-run" hidden>
+          <div class="readout clock-display" id="timer-readout">
+            <div class="readout-sub" id="timer-status"></div>
+            <output class="readout-main clock" id="timer-left" aria-live="off">0:00</output>
+            <div class="meter" aria-hidden="true"><div class="meter-fill" id="timer-meter"></div></div>
+          </div>
+          <div class="chips even">
+            <button class="chip" type="button" id="timer-add">+1 min</button>
+          </div>
+          <div class="controls">
+            <button class="btn alt" id="timer-cancel" type="button">Cancel</button>
+            <button class="btn accent" id="timer-toggle" type="button">Pause</button>
+          </div>
+        </div>
+      </section>
     </main>
 
     <nav class="tabbar" role="tablist" aria-label="Tools">
@@ -88,6 +133,12 @@
           <circle cx="12" cy="14" r="7"/><path d="M12 14V10.5M10 3h4M12 3v4M18.5 6.5l1.5-1.5"/>
         </svg>
         <span>Stopwatch</span>
+      </button>
+      <button class="tab" role="tab" id="tab-timer" data-tab="timer" aria-controls="tool-timer">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 3h12M6 21h12M7 3c0 5 5 6 5 9s-5 4-5 9M17 3c0 5-5 6-5 9s5 4 5 9"/>
+        </svg>
+        <span>Timer</span>
       </button>
     </nav>
   </div>
@@ -104,8 +155,10 @@
   <script src="lib/format.js"></script>
   <script src="lib/calculator.js"></script>
   <script src="lib/stopwatch.js"></script>
+  <script src="lib/timer.js"></script>
   <script src="tools/calculator.js"></script>
   <script src="tools/stopwatch.js"></script>
+  <script src="tools/timer.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
