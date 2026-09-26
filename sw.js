@@ -1,6 +1,6 @@
-const CACHE = 'calculator-v1';
-const ASSETS = ['./', 'index.html', 'style.css', 'calculator.js', 'app.js',
-  'manifest.webmanifest', 'icons/icon.svg'];
+const CACHE = 'calculator-v2';
+const ASSETS = ['./', 'index.html', 'style.css', 'themes.js', 'calculator.js', 'app.js',
+  'manifest.webmanifest', 'icons/icon.svg', 'fonts/PressStart2P-latin.woff2'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));

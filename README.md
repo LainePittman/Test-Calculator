@@ -10,6 +10,7 @@ and it works offline.
 - Shrinks long numbers to fit and adds thousands separators
 - Rounds away floating-point noise (0.1 + 0.2 = 0.3)
 - Shows `Error` on divide by zero
+- Theme picker (sliders button, top left): Classic or Pixel, remembered on the device
 - Works with a hardware keyboard (digits, `+ - * /`, Enter, Esc, Backspace)
 - Respects safe areas on notched phones; installable and works offline
 
@@ -32,4 +33,6 @@ node test.js
 - `style.css`: styles
 - `calculator.js`: calculator logic (no DOM access, so it can be unit tested)
 - `app.js`: connects the buttons and keyboard to the logic
+- `themes.js`: list of themes and remembering the chosen one
+- `fonts/`: Press Start 2P pixel font (SIL Open Font License)
 - `sw.js`, `manifest.webmanifest`, `icons/`: offline support and installability

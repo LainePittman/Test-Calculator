@@ -15,7 +15,9 @@
 
   function fitText() {
     resultEl.style.fontSize = '';
-    const max = resultEl.parentElement.clientWidth - 16;
+    const display = getComputedStyle(resultEl.parentElement);
+    const max = resultEl.parentElement.clientWidth
+      - parseFloat(display.paddingLeft) - parseFloat(display.paddingRight);
     let size = parseFloat(getComputedStyle(resultEl).fontSize);
     while (resultEl.scrollWidth > max && size > 20) {
       size -= 2;
@@ -52,8 +54,72 @@
     if (btn) press(btn);
   });
 
+  // Theme picker
+  const settings = document.getElementById('settings');
+  const settingsBtn = document.getElementById('settings-btn');
+  const themeOptions = document.getElementById('theme-options');
+
+  function renderThemeOptions() {
+    const current = document.documentElement.dataset.calcTheme;
+    themeOptions.replaceChildren(...Themes.list.map(theme => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'theme-option';
+      btn.dataset.themeId = theme.id;
+      btn.setAttribute('role', 'radio');
+      btn.setAttribute('aria-checked', String(theme.id === current));
+      const swatch = document.createElement('span');
+      swatch.className = 'swatch';
+      for (const color of theme.preview) {
+        const dot = document.createElement('i');
+        dot.style.background = color;
+        swatch.append(dot);
+      }
+      const name = document.createElement('span');
+      name.className = 'theme-name';
+      name.textContent = theme.name;
+      btn.append(swatch, name);
+      return btn;
+    }));
+  }
+
+  function openSettings() {
+    renderThemeOptions();
+    settings.hidden = false;
+    settingsBtn.setAttribute('aria-expanded', 'true');
+    themeOptions.querySelector('[aria-checked="true"]').focus();
+  }
+
+  function closeSettings() {
+    settings.hidden = true;
+    settingsBtn.setAttribute('aria-expanded', 'false');
+    settingsBtn.focus();
+  }
+
+  function setTheme(id) {
+    const theme = Themes.apply(id);
+    Themes.save(theme.id);
+    renderThemeOptions();
+    themeOptions.querySelector(`[data-theme-id="${theme.id}"]`).focus();
+    fitText();
+    // Web fonts load lazily; re-fit once the theme's font is ready.
+    if (document.fonts) document.fonts.ready.then(fitText);
+  }
+
+  settingsBtn.addEventListener('click', openSettings);
+  document.getElementById('settings-done').addEventListener('click', closeSettings);
+  settings.addEventListener('click', e => { if (e.target === settings) closeSettings(); });
+  themeOptions.addEventListener('click', e => {
+    const btn = e.target.closest('[data-theme-id]');
+    if (btn) setTheme(btn.dataset.themeId);
+  });
+
   // Keyboard support for desktop / hardware keyboards.
   document.addEventListener('keydown', e => {
+    if (!settings.hidden) {
+      if (e.key === 'Escape') closeSettings();
+      return;
+    }
     const k = e.key;
     if (/^\d$/.test(k)) calc.inputDigit(k);
     else if (k === '.' || k === ',') calc.inputDecimal();
@@ -68,6 +134,7 @@
 
   window.addEventListener('resize', fitText);
   render();
+  if (document.fonts) document.fonts.ready.then(fitText);
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     navigator.serviceWorker.register('sw.js');

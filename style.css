@@ -1,15 +1,68 @@
+/* Press Start 2P by Cody "CodeMan38" Boisclair, SIL Open Font License 1.1 (fonts/OFL.txt). */
+@font-face {
+  font-family: "Press Start 2P";
+  src: url("fonts/PressStart2P-latin.woff2") format("woff2");
+  font-display: swap;
+}
+
+/* Classic theme (default). Other themes override these tokens below. */
 :root {
   --bg: #000;
   --text: #fff;
   --muted: #8e8e93;
+  --result: #fff;
   --key: #333;
   --key-active: #737373;
   --fn: #a5a5a5;
   --fn-text: #000;
   --fn-active: #d9d9d9;
   --op: #ff9f0a;
+  --op-text: #fff;
   --op-active: #fcc78d;
+  --op-selected-bg: #fff;
+  --op-selected-text: #ff9f0a;
+  --sheet-bg: #1c1c1e;
+  --focus: #0a84ff;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --radius: 999px;
+  --tile-radius: 14px;
+  --sheet-radius: 20px;
+  --result-size: 5.5rem;
+  --expr-size: 1.4rem;
+  --key-font: 2rem;
+  --fn-font: 1.6rem;
+  --op-font: 2.3rem;
   --gap: 12px;
+  color-scheme: dark;
+}
+
+/* Pixel theme: 8-bit palette (Sweetie 16), square keys with notched corners, LCD readout. */
+:root[data-calc-theme="pixel"] {
+  --bg: #1a1c2c;
+  --text: #f4f4f4;
+  --muted: #94b0c2;
+  --result: #a7f070;
+  --key: #333c57;
+  --key-active: #566c86;
+  --fn: #94b0c2;
+  --fn-text: #1a1c2c;
+  --fn-active: #f4f4f4;
+  --op: #ef7d57;
+  --op-text: #1a1c2c;
+  --op-active: #ffcd75;
+  --op-selected-bg: #ffcd75;
+  --op-selected-text: #1a1c2c;
+  --sheet-bg: #262b44;
+  --focus: #ffcd75;
+  --font: "Press Start 2P", ui-monospace, "Courier New", monospace;
+  --radius: 0;
+  --tile-radius: 0;
+  --sheet-radius: 0;
+  --result-size: 2.6rem;
+  --expr-size: 0.8rem;
+  --key-font: 1.25rem;
+  --fn-font: 0.85rem;
+  --op-font: 1.4rem;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -19,7 +72,7 @@ html, body {
   height: 100%;
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font);
   overscroll-behavior: none;
   user-select: none;
   -webkit-user-select: none;
@@ -36,6 +89,24 @@ html, body {
            calc(20px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
 }
 
+.topbar {
+  display: flex;
+  padding-top: 8px;
+}
+
+.settings-btn {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.settings-btn:active { background: var(--key); }
+
 .display {
   flex: 1;
   display: flex;
@@ -48,15 +119,16 @@ html, body {
 
 .expression {
   min-height: 1.5em;
-  font-size: 1.4rem;
+  font-size: var(--expr-size);
   color: var(--muted);
   white-space: nowrap;
 }
 
 .result {
-  font-size: 5.5rem;
+  font-size: var(--result-size);
   font-weight: 300;
   line-height: 1.1;
+  color: var(--result);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
@@ -70,23 +142,23 @@ html, body {
 .key {
   aspect-ratio: 1;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius);
   background: var(--key);
   color: var(--text);
   font: inherit;
-  font-size: 2rem;
+  font-size: var(--key-font);
   cursor: pointer;
   touch-action: manipulation;
   transition: background-color 0.15s;
 }
 .key:active { background: var(--key-active); transition: none; }
 
-.key.fn { background: var(--fn); color: var(--fn-text); font-size: 1.6rem; }
+.key.fn { background: var(--fn); color: var(--fn-text); font-size: var(--fn-font); }
 .key.fn:active { background: var(--fn-active); }
 
-.key.op { background: var(--op); font-size: 2.3rem; }
+.key.op { background: var(--op); color: var(--op-text); font-size: var(--op-font); }
 .key.op:active { background: var(--op-active); }
-.key.op.selected { background: var(--text); color: var(--op); }
+.key.op.selected { background: var(--op-selected-bg); color: var(--op-selected-text); }
 
 .key.zero {
   grid-column: span 2;
@@ -95,7 +167,121 @@ html, body {
   padding-left: 12%;
 }
 
+.key:focus-visible, .settings-btn:focus-visible, .theme-option:focus-visible, .sheet-done:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Theme picker sheet */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+  background: rgb(0 0 0 / 0.55);
+}
+.sheet-backdrop[hidden] { display: none; }
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 440px;
+  padding: 20px;
+  border-radius: var(--sheet-radius);
+  background: var(--sheet-bg);
+  color: var(--text);
+}
+.sheet h2 { margin: 0; font-size: 1.1rem; font-weight: 600; }
+
+.theme-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.theme-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 8px;
+  border: 3px solid transparent;
+  border-radius: var(--tile-radius);
+  background: var(--key);
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.theme-option[aria-checked="true"] { border-color: var(--op); }
+
+.swatch { display: flex; gap: 6px; }
+.swatch i { width: 20px; height: 20px; border-radius: 50%; box-shadow: 0 0 0 2px rgb(255 255 255 / 0.25); }
+
+/* Each option previews its own theme's type and key shape. */
+.theme-option[data-theme-id="classic"] .theme-name {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.theme-option[data-theme-id="pixel"] .theme-name {
+  font-family: "Press Start 2P", ui-monospace, "Courier New", monospace;
+  font-size: 0.7rem;
+}
+.theme-option[data-theme-id="pixel"] .swatch i { border-radius: 0; }
+
+.sheet-done {
+  padding: 14px;
+  border: 0;
+  border-radius: var(--tile-radius);
+  background: var(--op);
+  color: var(--op-text);
+  font: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+/* Pixel-theme details that tokens can't express. */
+:root[data-calc-theme="pixel"] body { -webkit-font-smoothing: none; }
+
+:root[data-calc-theme="pixel"] .display {
+  margin-bottom: 16px;
+  padding: 12px;
+  background:
+    repeating-linear-gradient(transparent 0 3px, rgb(255 255 255 / 0.04) 3px 4px),
+    #0f101c;
+  box-shadow: inset 4px 4px 0 rgb(0 0 0 / 0.5);
+}
+:root[data-calc-theme="pixel"] .result { font-weight: 400; line-height: 1.4; }
+
+:root[data-calc-theme="pixel"] :is(.key, .theme-option, .sheet-done, .sheet, .display) {
+  /* Cut 4px corners so edges look drawn on a pixel grid. */
+  clip-path: polygon(0 4px, 4px 4px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px,
+    100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%,
+    4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px));
+}
+
+:root[data-calc-theme="pixel"] .key {
+  transition: none;
+  box-shadow: inset -4px -4px 0 rgb(0 0 0 / 0.35), inset 4px 4px 0 rgb(255 255 255 / 0.18);
+}
+:root[data-calc-theme="pixel"] .key:active {
+  box-shadow: inset 4px 4px 0 rgb(0 0 0 / 0.35), inset -4px -4px 0 rgb(255 255 255 / 0.1);
+}
+/* clip-path hides outlines, so draw the focus ring inside the key. */
+:root[data-calc-theme="pixel"] :is(.key, .theme-option, .sheet-done):focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 4px var(--focus);
+}
+
 @media (max-height: 600px) {
-  .result { font-size: 3.5rem; }
-  .key { aspect-ratio: auto; height: 56px; font-size: 1.5rem; }
+  :root { --result-size: 3.5rem; --key-font: 1.5rem; }
+  .key { aspect-ratio: auto; height: 56px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .key { transition: none; }
 }

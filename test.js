@@ -38,3 +38,21 @@ for (const [keys, expected] of cases) {
   assert.strictEqual(run(keys), expected, `${keys} → expected ${expected}`);
 }
 console.log(`All ${cases.length} tests passed`);
+
+// Themes
+const fs = require('fs');
+const Themes = require('./themes.js');
+const css = fs.readFileSync(__dirname + '/style.css', 'utf8');
+
+assert.strictEqual(Themes.list[0].id, 'classic', 'Classic is the default theme');
+assert.strictEqual(Themes.resolve('pixel').id, 'pixel');
+assert.strictEqual(Themes.resolve('nonexistent').id, 'classic', 'unknown themes fall back to Classic');
+assert.strictEqual(Themes.resolve(null).id, 'classic', 'no saved theme falls back to Classic');
+assert.strictEqual(new Set(Themes.list.map(t => t.id)).size, Themes.list.length, 'theme ids are unique');
+for (const t of Themes.list) {
+  assert.ok(t.name && /^#[0-9a-f]{6}$/i.test(t.color) && t.preview.length === 3, `${t.id} is complete`);
+  if (t !== Themes.list[0]) {
+    assert.ok(css.includes(`:root[data-calc-theme="${t.id}"]`), `${t.id} has styles in style.css`);
+  }
+}
+console.log(`All ${Themes.list.length} themes passed`);

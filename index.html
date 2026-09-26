@@ -11,10 +11,22 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon.svg">
+  <link rel="preload" href="fonts/PressStart2P-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="style.css">
+  <script src="themes.js"></script>
 </head>
 <body>
   <main class="calculator">
+    <div class="topbar">
+      <button class="settings-btn" id="settings-btn" type="button" aria-label="Change theme"
+              aria-haspopup="dialog" aria-expanded="false" aria-controls="settings">
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M4 7h9M17 7h3M4 17h3M11 17h9"/>
+          <circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>
+        </svg>
+      </button>
+    </div>
     <div class="display">
       <div class="expression" id="expression" aria-live="polite"></div>
       <output class="result" id="result">0</output>
@@ -45,6 +57,13 @@
       <button class="key op equals" data-action="equals">=</button>
     </div>
   </main>
+  <div class="sheet-backdrop" id="settings" hidden>
+    <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <h2 id="settings-title">Theme</h2>
+      <div class="theme-options" id="theme-options" role="radiogroup" aria-labelledby="settings-title"></div>
+      <button class="sheet-done" id="settings-done" type="button">Done</button>
+    </section>
+  </div>
   <script src="calculator.js"></script>
   <script src="app.js"></script>
 </body>
