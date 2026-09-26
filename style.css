@@ -47,6 +47,7 @@
   --accent-font: 2.3rem;
   --control-font: 1.2rem;
   --clock-size: min(5.5rem, 18cqw);
+  --value-size: 2.75rem;
   --gap: 12px;
   color-scheme: dark;
 }
@@ -88,6 +89,7 @@
   --accent-font: 1.4rem;
   --control-font: 0.75rem;
   --clock-size: 9.5cqw;
+  --value-size: 1.3rem;
 }
 
 /* ==== Base ============================================================== */
@@ -291,6 +293,16 @@ html, body {
 .chip:active { background: var(--btn-active); }
 .chips.even { display: grid; grid-auto-columns: 1fr; grid-auto-flow: column; }
 .chips.even .chip { padding-inline: 4px; }
+.chips.scroll {
+  flex-wrap: nowrap;
+  flex: none;
+  margin-inline: -16px;
+  padding-inline: 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.chips.scroll::-webkit-scrollbar { display: none; }
+.chips.scroll .chip { flex: none; white-space: nowrap; }
 .chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); }
 
 /* Full-width primary button */
@@ -399,6 +411,39 @@ select.field {
 .readout.alarm .readout-main { animation: blink 1s steps(2, jump-none) infinite; }
 @keyframes blink { 50% { opacity: 0.25; } }
 
+/* ==== Unit converter ==================================================== */
+.conv-panel {
+  flex: none;
+  align-items: stretch;
+  gap: 12px;
+  padding: 12px;
+  border-radius: var(--tile-radius);
+  background: var(--surface);
+}
+.conv-panel .field { background-color: var(--btn); }
+.conv-value {
+  width: 100%;
+  min-width: 0;
+  padding: 4px 4px 8px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--value-size);
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  caret-color: var(--accent);
+}
+input.conv-value {
+  border-bottom: 2px solid var(--line);
+  user-select: text;
+  -webkit-user-select: text;
+}
+input.conv-value:focus { outline: none; border-bottom-color: var(--accent); }
+input.conv-value[aria-invalid="true"] { border-bottom-color: var(--bad); }
+.conv-swap { align-self: center; flex: none; margin-block: -8px; }
+.conv-formula { margin: 0; text-align: center; white-space: normal; }
+
 /* ==== Theme picker sheet ================================================ */
 .sheet-backdrop {
   position: fixed;
@@ -504,6 +549,9 @@ select.field {
 :root[data-app-theme="pixel"] .tab[aria-selected="true"] { background: var(--btn); }
 :root[data-app-theme="pixel"] .list li { border-bottom: 4px dotted var(--btn); font-size: 0.7rem; }
 
+:root[data-app-theme="pixel"] input.conv-value { border-bottom: 4px dashed var(--btn); }
+:root[data-app-theme="pixel"] input.conv-value:focus { border-bottom-color: var(--accent); }
+:root[data-app-theme="pixel"] .conv-formula { font-size: 0.55rem; line-height: 1.8; }
 :root[data-app-theme="pixel"] .meter { height: 16px; }
 :root[data-app-theme="pixel"] .meter-fill {
   /* Chunky 8-bit segments */

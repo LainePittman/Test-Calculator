@@ -48,6 +48,10 @@ async function textFits(p, selector) {
   });
   assert.ok(fits, `${selector} text overflows its panel`);
 }
+async function fullyVisible(p, selector) {
+  const ok = await p.$eval(selector, el => el.scrollWidth <= el.clientWidth + 1);
+  assert.ok(ok, `${selector} text is cut off`);
+}
 async function oneLine(p, selector) {
   const ok = await p.$$eval(selector, els => els.every(e => {
     const lh = parseFloat(getComputedStyle(e).lineHeight) || parseFloat(getComputedStyle(e).fontSize) * 1.3;
@@ -351,6 +355,109 @@ for (const id of ['classic', 'pixel']) {
     await p.locator('#timer-start').scrollIntoViewIfNeeded();
     await fitsInViewport(p, '#timer-start');
     await shot(p, `timer-small-${id}`);
+  });
+}
+
+// ---- Unit converter ------------------------------------------------------------
+const result = p => p.textContent('#conv-result');
+async function amount(p, text) {
+  await p.fill('#conv-value', text);
+}
+
+suite('convert: miles to km by default, converts as you type', async p => {
+  await openTool(p, 'convert');
+  assert.strictEqual(await p.textContent('#tool-title'), 'Unit Converter');
+  assert.strictEqual(await p.getAttribute('[data-category="length"]', 'aria-pressed'), 'true');
+  assert.strictEqual(await result(p), '1.609344');
+  assert.strictEqual(await p.textContent('#conv-formula'), '1 mi = 1.609344 km');
+  await amount(p, '26.2');
+  assert.strictEqual(await result(p), '42.1648128');
+  await amount(p, '1,000');
+  assert.strictEqual(await result(p), '1,609.344');
+});
+
+suite('convert: swap, change units, categories', async p => {
+  await openTool(p, 'convert');
+  await amount(p, '10');
+  await p.click('#conv-swap');
+  assert.strictEqual(await p.inputValue('#conv-from'), 'km');
+  assert.strictEqual(await p.inputValue('#conv-to'), 'mi');
+  assert.strictEqual(await result(p), '6.21371192237');
+  await p.selectOption('#conv-to', 'm');
+  assert.strictEqual(await result(p), '10,000');
+
+  await p.click('[data-category="temperature"]');
+  assert.strictEqual(await p.inputValue('#conv-from'), 'f');
+  await amount(p, '212');
+  assert.strictEqual(await result(p), '100');
+  await amount(p, '-40');
+  assert.strictEqual(await result(p), '−40');
+
+  await p.click('[data-category="volume"]');
+  await amount(p, '1');
+  assert.strictEqual(await p.textContent('#conv-formula'), '1 cup = 236.5882365 mL');
+
+  await p.click('[data-category="weight"]');
+  await amount(p, '1,5'); // comma as decimal point
+  assert.strictEqual(await result(p), '0.680388555');
+
+  await p.click('[data-category="length"]');
+  assert.strictEqual(await p.inputValue('#conv-from'), 'km', 'remembers units per category');
+  assert.strictEqual(await p.inputValue('#conv-to'), 'm');
+});
+
+suite('convert: flags input that is not a number', async p => {
+  await openTool(p, 'convert');
+  await amount(p, 'abc');
+  assert.strictEqual(await result(p), '—');
+  assert.strictEqual(await p.getAttribute('#conv-value', 'aria-invalid'), 'true');
+  await amount(p, '');
+  assert.strictEqual(await p.getAttribute('#conv-value', 'aria-invalid'), 'false', 'empty is not an error');
+  await amount(p, '5');
+  assert.strictEqual(await p.getAttribute('#conv-value', 'aria-invalid'), 'false');
+});
+
+suite('convert: remembers everything after closing', async p => {
+  await openTool(p, 'convert');
+  await p.click('[data-category="speed"]');
+  await p.selectOption('#conv-from', 'kn');
+  await amount(p, '30');
+  await p.reload();
+  assert.strictEqual(await p.textContent('#tool-title'), 'Unit Converter');
+  assert.strictEqual(await p.getAttribute('[data-category="speed"]', 'aria-pressed'), 'true');
+  assert.strictEqual(await p.inputValue('#conv-value'), '30');
+  assert.strictEqual(await p.inputValue('#conv-from'), 'kn');
+  assert.strictEqual(await result(p), '55.56');
+});
+
+suite('convert: typing in the amount does not reach other tools', async p => {
+  await openTool(p, 'convert');
+  await p.click('#conv-value');
+  await p.keyboard.type('77');
+  await p.keyboard.press('Enter');
+  await openTool(p, 'calculator');
+  assert.strictEqual(await p.textContent('#calc-result'), '0');
+});
+
+for (const id of ['classic', 'pixel']) {
+  suite(`convert (${id}): layout`, async p => {
+    await setTheme(p, id);
+    await openTool(p, 'convert');
+    await amount(p, '123456789');
+    await p.selectOption('#conv-to', 'mm');
+    assert.strictEqual(await result(p), '198,684,442,636,000'); // 198,684,442,636,416 to 12 significant digits
+    await fullyVisible(p, '#conv-result');
+    await fullyVisible(p, '#conv-value');
+    await noHorizontalScroll(p);
+    await fitsInViewport(p, '#conv-formula');
+    await oneLine(p, '#conv-categories .chip');
+    await shot(p, `convert-${id}`);
+    await p.setViewportSize({ width: 320, height: 568 });
+    await p.click('[data-category="temperature"]');
+    await fullyVisible(p, '#conv-result');
+    await noHorizontalScroll(p);
+    await fitsInViewport(p, '#conv-formula');
+    await shot(p, `convert-small-${id}`);
   });
 }
 

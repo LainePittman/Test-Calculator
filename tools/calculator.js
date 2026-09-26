@@ -4,18 +4,7 @@
   const symbols = { '+': '+', '-': '−', '*': '×', '/': '÷' };
   let resultEl, exprEl, clearBtn, opButtons;
 
-  function fitText() {
-    if (!resultEl.offsetParent) return; // hidden
-    resultEl.style.fontSize = '';
-    const box = getComputedStyle(resultEl.parentElement);
-    const max = resultEl.parentElement.clientWidth
-      - parseFloat(box.paddingLeft) - parseFloat(box.paddingRight);
-    let size = parseFloat(getComputedStyle(resultEl).fontSize);
-    while (resultEl.scrollWidth > max && size > 16) {
-      size -= 2;
-      resultEl.style.fontSize = size + 'px';
-    }
-  }
+  const fit = () => fitText(resultEl, 16);
 
   function render() {
     resultEl.textContent = Format.group(calc.current).replace('-', '−');
@@ -25,7 +14,7 @@
     clearBtn.textContent = calc.current !== '0' && !calc.overwrite ? 'C' : 'AC';
     opButtons.forEach(b => b.classList.toggle(
       'selected', b.dataset.op === calc.operator && calc.overwrite));
-    fitText();
+    fit();
   }
 
   function press(btn) {
@@ -57,7 +46,7 @@
     },
 
     show: render,
-    refresh: fitText,
+    refresh: fit,
 
     // Hardware keyboard. Returns true when the key was used.
     key(e) {

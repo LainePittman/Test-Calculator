@@ -119,6 +119,26 @@
           </div>
         </div>
       </section>
+
+      <!-- Unit converter -->
+      <section class="tool tool-convert" id="tool-convert" role="tabpanel" aria-labelledby="tab-convert" hidden>
+        <div class="chips scroll" id="conv-categories" role="group" aria-label="What to convert"></div>
+        <div class="readout conv-panel">
+          <select class="field" id="conv-from" aria-label="Convert from"></select>
+          <input class="readout-main conv-value" id="conv-value" type="text" inputmode="decimal"
+                 autocomplete="off" spellcheck="false" aria-label="Amount" value="1">
+        </div>
+        <button class="icon-btn conv-swap" id="conv-swap" type="button" aria-label="Swap units">
+          <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 4v16M4 8l4-4 4 4M16 20V4M12 16l4 4 4-4"/>
+          </svg>
+        </button>
+        <div class="readout conv-panel">
+          <select class="field" id="conv-to" aria-label="Convert to"></select>
+          <output class="readout-main conv-value" id="conv-result" aria-live="polite"></output>
+        </div>
+        <p class="readout-sub conv-formula" id="conv-formula"></p>
+      </section>
     </main>
 
     <nav class="tabbar" role="tablist" aria-label="Tools">
@@ -140,6 +160,12 @@
         </svg>
         <span>Timer</span>
       </button>
+      <button class="tab" role="tab" id="tab-convert" data-tab="convert" aria-controls="tool-convert">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 8h14M14 4l4 4-4 4M20 16H6M10 12l-4 4 4 4"/>
+        </svg>
+        <span>Convert</span>
+      </button>
     </nav>
   </div>
 
@@ -153,12 +179,15 @@
 
   <script src="lib/store.js"></script>
   <script src="lib/format.js"></script>
+  <script src="lib/fit.js"></script>
   <script src="lib/calculator.js"></script>
   <script src="lib/stopwatch.js"></script>
   <script src="lib/timer.js"></script>
+  <script src="lib/units.js"></script>
   <script src="tools/calculator.js"></script>
   <script src="tools/stopwatch.js"></script>
   <script src="tools/timer.js"></script>
+  <script src="tools/convert.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -12,6 +12,8 @@ screen, and works offline.
 - **Timer**: type a length like a microwave (`5 0 0` = 5 minutes) or tap a preset;
   pause, +1 minute, and an alarm that beeps and vibrates (a chiptune beep in the
   Pixel theme). Finishes on time even if the app was closed, and opens to it
+- **Unit converter**: length, weight, temperature, volume (US) and speed; converts
+  as you type, swap button, remembers your units per category. Accepts `1,5` or `1.5`
 
 ## Themes
 Tap the sliders button (top right) to pick a theme. The choice applies to every
@@ -41,7 +43,8 @@ SCREENSHOTS=1 npm run test:browser   # also saves screenshots to test-screenshot
 - `themes.js`: list of themes; saves the chosen one
 - `style.css`: theme tokens, then shared components (`.btn`, `.readout`, `.keypad`,
   `.chip`, `.field`, `.list`), then per-tool layout, then Pixel overrides
-- `lib/`: pure logic with no DOM access, unit tested in Node
+- `lib/`: pure logic with no DOM access, unit tested in Node (plus two tiny shared
+  browser helpers: `store.js` for saving, `fit.js` for shrinking big numbers to fit)
 - `tools/`: one file per tool that connects its panel to its logic
 - `tests/`: unit tests (`*.test.js`) and browser tests (`browser.js`)
 - `scripts/build-single.js`: bundles everything into one HTML file (`npm run build:single`)
