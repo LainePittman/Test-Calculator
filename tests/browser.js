@@ -33,7 +33,14 @@ async function setTheme(p, id) {
   await p.click('#settings-done');
 }
 async function noHorizontalScroll(p) {
-  assert.ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'page scrolls sideways');
+  const problem = await p.evaluate(() => {
+    if (document.documentElement.scrollWidth <= innerWidth) return null;
+    const culprits = [...document.querySelectorAll('body *')]
+      .filter(e => e.offsetParent && e.getBoundingClientRect().right > innerWidth + 1)
+      .map(e => `${e.tagName.toLowerCase()}${e.id ? '#' + e.id : ''}.${[...e.classList].join('.')} → ${Math.round(e.getBoundingClientRect().right)}px`);
+    return `page is ${document.documentElement.scrollWidth}px wide in a ${innerWidth}px screen: ${culprits.slice(0, 4).join(', ')}`;
+  });
+  assert.ok(!problem, problem);
 }
 async function fitsInViewport(p, selector) {
   const box = await p.locator(selector).boundingBox();
@@ -460,6 +467,186 @@ for (const id of ['classic', 'pixel']) {
     await shot(p, `convert-small-${id}`);
   });
 }
+
+// ---- Blackjack ------------------------------------------------------------------
+// Stacks the shoe (cards come out in this order: you, dealer, you, dealer, then hits)
+// and reloads, so every hand is predictable.
+async function stackDeck(p, order, extra = {}) {
+  await p.evaluate(({ order, extra }) => {
+    const card = r => ({ rank: r, suit: r === '10' ? '♥' : '♠' });
+    const filler = Array(80).fill('5').map(card);
+    const shoe = [...filler, ...order.split(' ').map(card).reverse()];
+    localStorage.setItem('blackjack', JSON.stringify({ game: { shoe, ...extra }, bet: extra.bet ?? 100 }));
+  }, { order, extra });
+  await p.reload();
+  await openTool(p, 'blackjack');
+}
+const faceUp = (p, who) => p.$$eval(`#bj-${who}-cards .card`, cs => cs.map(c => c.classList.contains('back') ? '?' : c.querySelector('.card-rank').textContent).join(' '));
+const bjMessage = p => p.textContent('#bj-message');
+
+suite('blackjack: betting with chips', async p => {
+  await openTool(p, 'blackjack');
+  assert.strictEqual(await p.textContent('#tool-title'), 'Blackjack');
+  assert.strictEqual(await bjMessage(p), 'Place your bet');
+  assert.strictEqual(await p.textContent('#bj-bankroll'), '1,000');
+  assert.strictEqual(await p.textContent('#bj-bet'), '25');
+  await p.click('[data-chip="50"]');
+  assert.strictEqual(await p.textContent('#bj-bet'), '75');
+  await p.click('#bj-clear');
+  assert.strictEqual(await p.textContent('#bj-bet'), '0');
+  assert.ok(await p.isDisabled('#bj-deal'), 'cannot deal a zero bet');
+  await p.click('[data-chip="100"]');
+  assert.ok(!(await p.isDisabled('#bj-deal')));
+  await shot(p, 'blackjack-betting-classic');
+});
+
+suite('blackjack: a hand, hole card hidden until the dealer plays', async p => {
+  await stackDeck(p, '10 9 7 8 2');
+  await p.click('#bj-deal');
+  assert.strictEqual(await faceUp(p, 'player'), '10 7');
+  assert.strictEqual(await faceUp(p, 'dealer'), '9 ?', 'hole card face down');
+  assert.strictEqual(await p.textContent('#bj-dealer-total'), '9');
+  assert.strictEqual(await p.textContent('#bj-bankroll'), '900');
+  assert.strictEqual(await bjMessage(p), 'Hit or stand?');
+  await p.click('#bj-hit');
+  assert.strictEqual(await p.textContent('#bj-player-total'), '19');
+  await shot(p, 'blackjack-playing-classic');
+  await p.click('#bj-stand');
+  assert.strictEqual(await faceUp(p, 'dealer'), '9 8');
+  assert.strictEqual(await p.textContent('#bj-bankroll'), '900', 'result held back while the dealer plays');
+  await p.clock.runFor(1000);
+  assert.strictEqual(await bjMessage(p), 'You win! +100');
+  assert.strictEqual(await p.textContent('#bj-bankroll'), '1,100');
+  assert.strictEqual(await p.textContent('#bj-record'), '1W 0L 0P');
+  assert.ok(await p.isVisible('#bj-again'));
+});
+
+suite('blackjack: the CPU dealer draws one card at a time', async p => {
+  await stackDeck(p, '10 6 9 5 3 4'); // dealer 6 5 → draws 3 (14) → draws 4 (18)
+  await p.click('#bj-deal');
+  await p.click('#bj-stand');
+  assert.strictEqual(await faceUp(p, 'dealer'), '6 5');
+  assert.strictEqual(await bjMessage(p), "Dealer's turn");
+  assert.ok(await p.isDisabled('#bj-hit'), 'no moves during the dealer turn');
+  await p.clock.runFor(560);
+  assert.strictEqual(await faceUp(p, 'dealer'), '6 5 3');
+  await p.clock.runFor(560);
+  assert.strictEqual(await faceUp(p, 'dealer'), '6 5 3 4');
+  assert.strictEqual(await p.textContent('#bj-dealer-total'), '18');
+  await p.clock.runFor(600);
+  assert.strictEqual(await bjMessage(p), 'You win! +100');
+});
+
+suite('blackjack: bust, dealer blackjack, natural blackjack pays 3:2', async p => {
+  await stackDeck(p, '10 7 6 10 K');
+  await p.click('#bj-deal');
+  await p.click('#bj-hit');
+  await p.clock.runFor(700);
+  assert.strictEqual(await bjMessage(p), 'Bust! −100');
+  assert.strictEqual(await faceUp(p, 'dealer'), '7 10', 'hole card shown after you bust');
+
+  await stackDeck(p, '10 A 9 K');
+  await p.click('#bj-deal');
+  await p.clock.runFor(1200);
+  assert.strictEqual(await bjMessage(p), 'Dealer has blackjack −100');
+
+  await stackDeck(p, 'A 9 K 7', { bet: 25 });
+  await p.click('#bj-deal');
+  await p.clock.runFor(1200);
+  assert.strictEqual(await bjMessage(p), 'Blackjack! +37.5');
+  assert.strictEqual(await p.textContent('#bj-bankroll'), '1,037.5');
+  await shot(p, 'blackjack-natural-classic');
+});
+
+suite('blackjack: double down', async p => {
+  await stackDeck(p, '6 10 5 7 10');
+  await p.click('#bj-deal');
+  await p.click('#bj-double');
+  assert.strictEqual(await p.textContent('#bj-bet'), '200');
+  assert.strictEqual(await faceUp(p, 'player'), '6 5 10');
+  await p.clock.runFor(1200);
+  assert.strictEqual(await bjMessage(p), 'You win! +200');
+  assert.strictEqual(await p.textContent('#bj-bankroll'), '1,200');
+});
+
+suite('blackjack: out of chips, then new chips', async p => {
+  await stackDeck(p, '10 10 6 9 K', { bankroll: 100 });
+  await p.click('#bj-deal');
+  await p.click('#bj-hit');
+  await p.clock.runFor(700);
+  assert.ok(await p.isVisible('#bj-refill'));
+  assert.ok(!(await p.isVisible('#bj-again')));
+  await shot(p, 'blackjack-broke-classic');
+  await p.click('#bj-refill');
+  assert.strictEqual(await p.textContent('#bj-bankroll'), '1,000');
+  assert.strictEqual(await bjMessage(p), 'Place your bet');
+});
+
+suite('blackjack: a hand survives closing the app', async p => {
+  await stackDeck(p, '10 9 7 8 2');
+  await p.click('#bj-deal');
+  await p.reload();
+  assert.strictEqual(await faceUp(p, 'player'), '10 7');
+  assert.strictEqual(await faceUp(p, 'dealer'), '9 ?');
+  await p.click('#bj-hit');
+  assert.strictEqual(await p.textContent('#bj-player-total'), '19');
+});
+
+suite('blackjack: keyboard (Enter, H, S, B)', async p => {
+  await stackDeck(p, '10 9 7 8 2');
+  await p.evaluate(() => document.activeElement.blur());
+  await p.keyboard.press('Enter');
+  await p.keyboard.press('h');
+  await p.keyboard.press('s');
+  await p.clock.runFor(1000);
+  assert.strictEqual(await bjMessage(p), 'You win! +100');
+  await p.keyboard.press('b');
+  assert.strictEqual(await bjMessage(p), 'Place your bet');
+});
+
+for (const id of ['classic', 'pixel']) {
+  suite(`blackjack (${id}): long hands fit, layout`, async p => {
+    await stackDeck(p, 'A 10 A 7 A A 2 2 2 2');
+    await setTheme(p, id);
+    await p.click('#bj-deal');
+    for (let i = 0; i < 6; i++) await p.click('#bj-hit'); // A A A A 2 2 2 2 = 16 with 8 cards
+    assert.strictEqual(await p.$$eval('#bj-player-cards .card', c => c.length), 8);
+    // Layout position (offsetLeft ignores the slide-in animation's temporary offset).
+    const fits = () => p.$eval('#bj-player-cards', box => {
+      const last = box.lastElementChild;
+      return last.offsetLeft + last.offsetWidth <= box.offsetLeft + box.clientWidth + 1;
+    });
+    assert.ok(await fits(), 'eight cards fit across the table');
+    await noHorizontalScroll(p);
+    await fitsInViewport(p, '#bj-stand');
+    await shot(p, `blackjack-${id}`);
+    await p.setViewportSize({ width: 320, height: 568 });
+    assert.ok(await fits(), 'eight cards fit on a small phone');
+    await noHorizontalScroll(p);
+    await p.locator('#bj-stand').scrollIntoViewIfNeeded();
+    await fitsInViewport(p, '#bj-stand');
+    await shot(p, `blackjack-small-${id}`);
+  });
+}
+
+suite('shell: tab labels are readable on phones', async p => {
+  for (const [w, h] of [[390, 844], [320, 568]]) {
+    await p.setViewportSize({ width: w, height: h });
+    for (const id of ['classic', 'pixel']) {
+      await setTheme(p, id);
+      const labels = await p.$$eval('.tab span', spans => spans
+        .filter(s => s.offsetParent && s.getBoundingClientRect().width > 1)
+        .map(s => ({ text: s.textContent, cut: s.scrollWidth > s.clientWidth + 1 })));
+      assert.strictEqual(labels.length, 5, `${id} @${w}px: one visible label per tab`);
+      assert.deepStrictEqual(labels.filter(l => l.cut).map(l => l.text), [], `${id} @${w}px: labels cut off`);
+      await noHorizontalScroll(p);
+    }
+  }
+  // Screen readers still get the full names.
+  const names = await p.$$eval('.tab', tabs => tabs.map(t => t.querySelector('.tab-label').textContent));
+  assert.deepStrictEqual(names, ['Calculator', 'Stopwatch', 'Timer', 'Convert', 'Blackjack']);
+  await shot(p, 'tabs-small-pixel');
+});
 
 // ---- Runner ---------------------------------------------------------------------
 (async () => {

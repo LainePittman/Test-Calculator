@@ -15,6 +15,11 @@ screen, and works offline.
 - **Unit converter**: length, weight, temperature, volume (US) and speed; converts
   as you type, swap button, remembers your units per category. Accepts `1,5` or `1.5`
 
+## Games
+- **Blackjack**: play against a CPU dealer with chips (start with 1,000; saved between
+  visits). Hit, stand or double; blackjack pays 3:2; the dealer draws to 16 and stands
+  on all 17s from a 4-deck shoe, revealing one card at a time. Keys: Enter, H, S, D, B
+
 ## Themes
 Tap the sliders button (top right) to pick a theme. The choice applies to every
 tool and is remembered on the device.

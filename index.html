@@ -139,6 +139,54 @@
         </div>
         <p class="readout-sub conv-formula" id="conv-formula"></p>
       </section>
+
+      <!-- Blackjack -->
+      <section class="tool tool-blackjack" id="tool-blackjack" role="tabpanel" aria-labelledby="tab-blackjack" hidden>
+        <div class="readout bj-table">
+          <div class="bj-hand">
+            <div class="bj-label"><span>Dealer</span><span class="bj-total" id="bj-dealer-total"></span></div>
+            <div class="cards" id="bj-dealer-cards" aria-label="Dealer's cards"></div>
+          </div>
+          <div class="bj-message" id="bj-message" aria-live="polite"></div>
+          <div class="bj-hand">
+            <div class="bj-label"><span>You</span><span class="bj-total" id="bj-player-total"></span></div>
+            <div class="cards" id="bj-player-cards" aria-label="Your cards"></div>
+          </div>
+        </div>
+        <div class="bj-bank">
+          <span>Chips <strong id="bj-bankroll">1,000</strong></span>
+          <span>Bet <strong id="bj-bet">0</strong></span>
+          <span class="bj-record" id="bj-record" title="Wins, losses, pushes"></span>
+        </div>
+        <div class="bj-controls" id="bj-betting">
+          <div class="chips even" id="bj-chips">
+            <button class="chip" type="button" data-chip="10">+10</button>
+            <button class="chip" type="button" data-chip="25">+25</button>
+            <button class="chip" type="button" data-chip="50">+50</button>
+            <button class="chip" type="button" data-chip="100">+100</button>
+          </div>
+          <div class="controls">
+            <button class="btn alt" id="bj-clear" type="button">Clear</button>
+            <button class="btn accent" id="bj-deal" type="button">Deal</button>
+          </div>
+        </div>
+        <div class="bj-controls" id="bj-playing" hidden>
+          <div class="controls three">
+            <button class="btn alt" id="bj-double" type="button">Double</button>
+            <button class="btn" id="bj-hit" type="button">Hit</button>
+            <button class="btn accent" id="bj-stand" type="button">Stand</button>
+          </div>
+        </div>
+        <div class="bj-controls" id="bj-done" hidden>
+          <div class="controls">
+            <button class="btn alt" id="bj-change" type="button">Change bet</button>
+            <button class="btn accent" id="bj-again" type="button">Deal again</button>
+          </div>
+        </div>
+        <div class="bj-controls" id="bj-broke" hidden>
+          <button class="btn accent action" id="bj-refill" type="button">Get 1,000 new chips</button>
+        </div>
+      </section>
     </main>
 
     <nav class="tabbar" role="tablist" aria-label="Tools">
@@ -146,25 +194,32 @@
         <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
           <rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8.5 12h.01M12 12h.01M15.5 12h.01M8.5 16h.01M12 16h.01M15.5 16h.01"/>
         </svg>
-        <span>Calculator</span>
+        <span class="tab-label">Calculator</span><span class="tab-short" aria-hidden="true">Calc</span>
       </button>
       <button class="tab" role="tab" id="tab-stopwatch" data-tab="stopwatch" aria-controls="tool-stopwatch">
         <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
           <circle cx="12" cy="14" r="7"/><path d="M12 14V10.5M10 3h4M12 3v4M18.5 6.5l1.5-1.5"/>
         </svg>
-        <span>Stopwatch</span>
+        <span class="tab-label">Stopwatch</span><span class="tab-short" aria-hidden="true">Watch</span>
       </button>
       <button class="tab" role="tab" id="tab-timer" data-tab="timer" aria-controls="tool-timer">
         <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M6 3h12M6 21h12M7 3c0 5 5 6 5 9s-5 4-5 9M17 3c0 5-5 6-5 9s5 4 5 9"/>
         </svg>
-        <span>Timer</span>
+        <span class="tab-label">Timer</span><span class="tab-short" aria-hidden="true">Timer</span>
       </button>
       <button class="tab" role="tab" id="tab-convert" data-tab="convert" aria-controls="tool-convert">
         <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M4 8h14M14 4l4 4-4 4M20 16H6M10 12l-4 4 4 4"/>
         </svg>
-        <span>Convert</span>
+        <span class="tab-label">Convert</span><span class="tab-short" aria-hidden="true">Units</span>
+      </button>
+      <button class="tab" role="tab" id="tab-blackjack" data-tab="blackjack" aria-controls="tool-blackjack">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="2.5" width="14" height="19" rx="2"/>
+          <path d="M12 8c-1.5 2-3 2.8-3 4.3a1.7 1.7 0 0 0 3 1.1 1.7 1.7 0 0 0 3-1.1C15 10.8 13.5 10 12 8zM12 14v2.5"/>
+        </svg>
+        <span class="tab-label">Blackjack</span><span class="tab-short" aria-hidden="true">Cards</span>
       </button>
     </nav>
   </div>
@@ -184,10 +239,12 @@
   <script src="lib/stopwatch.js"></script>
   <script src="lib/timer.js"></script>
   <script src="lib/units.js"></script>
+  <script src="lib/blackjack.js"></script>
   <script src="tools/calculator.js"></script>
   <script src="tools/stopwatch.js"></script>
   <script src="tools/timer.js"></script>
   <script src="tools/convert.js"></script>
+  <script src="tools/blackjack.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
