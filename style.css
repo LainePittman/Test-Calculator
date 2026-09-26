@@ -45,6 +45,8 @@
   --btn-font: 2rem;
   --alt-font: 1.6rem;
   --accent-font: 2.3rem;
+  --control-font: 1.2rem;
+  --clock-size: min(5.5rem, 18cqw);
   --gap: 12px;
   color-scheme: dark;
 }
@@ -84,6 +86,8 @@
   --btn-font: 1.25rem;
   --alt-font: 0.85rem;
   --accent-font: 1.4rem;
+  --control-font: 0.75rem;
+  --clock-size: 9.5cqw;
 }
 
 /* ==== Base ============================================================== */
@@ -253,6 +257,20 @@ html, body {
   padding-left: 12%;
 }
 
+.btn.danger { background: var(--bad); color: var(--accent-text); }
+.btn.danger:active { background: var(--bad); filter: brightness(1.2); }
+
+/* Row of two large action buttons (secondary left, primary right) */
+.controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap);
+}
+.controls .btn {
+  height: 64px;
+  font-size: var(--control-font);
+}
+
 /* Small pill choices (presets, categories) */
 .chips {
   display: flex;
@@ -316,6 +334,20 @@ select.field {
 
 /* ==== Calculator ======================================================== */
 .calc-display { flex: 1; min-height: 0; }
+
+/* ==== Stopwatch & timer clocks ========================================= */
+.clock-display {
+  flex: 0 0 auto;
+  justify-content: center;
+  align-items: center;
+  min-height: 26cqh;
+}
+.clock { font-size: var(--clock-size); }
+.clock.long { font-size: calc(var(--clock-size) * 0.8); }
+
+.laps { flex: 1; min-height: 0; }
+.laps .lap-fastest { color: var(--good); }
+.laps .lap-slowest { color: var(--bad); }
 
 /* ==== Theme picker sheet ================================================ */
 .sheet-backdrop {

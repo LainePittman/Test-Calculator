@@ -1,10 +1,10 @@
 // Offline support: cache the app's files on install and serve them cache-first.
 // Bump CACHE whenever the file list or file contents change.
-const CACHE = 'pocket-tools-v3';
+const CACHE = 'pocket-tools-v4';
 const ASSETS = [
   './', 'index.html', 'style.css', 'themes.js', 'app.js',
-  'lib/format.js', 'lib/calculator.js',
-  'tools/calculator.js',
+  'lib/store.js', 'lib/format.js', 'lib/calculator.js', 'lib/stopwatch.js',
+  'tools/calculator.js', 'tools/stopwatch.js',
   'manifest.webmanifest', 'icons/icon.svg', 'fonts/PressStart2P-latin.woff2',
 ];
 

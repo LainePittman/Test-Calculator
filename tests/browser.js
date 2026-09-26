@@ -117,6 +117,106 @@ suite('calculator: fits a short phone screen', async p => {
   }
 });
 
+// ---- Stopwatch ------------------------------------------------------------------
+const T0 = new Date('2026-01-01T09:00:00Z');
+async function openTool(p, id) {
+  await p.click(`[data-tab="${id}"]`);
+  assert.ok(await p.isVisible(`#tool-${id}`), `${id} panel visible`);
+}
+const laps = p => p.$$eval('#sw-laps li', rows => rows.map(r => ({
+  text: [...r.children].map(c => c.textContent).join(' '), cls: r.className })));
+
+suite('stopwatch: start, stop and exact time', async p => {
+  await openTool(p, 'stopwatch');
+  assert.strictEqual(await p.textContent('#tool-title'), 'Stopwatch');
+  assert.strictEqual(await p.textContent('#sw-time'), '00:00.00');
+  assert.ok(await p.isDisabled('#sw-secondary'), 'Lap disabled before starting');
+  await p.click('#sw-primary');
+  assert.strictEqual(await p.textContent('#sw-primary'), 'Stop');
+  await p.clock.runFor(1500);
+  await p.click('#sw-primary');
+  assert.strictEqual(await p.textContent('#sw-time'), '00:01.50');
+  assert.strictEqual(await p.textContent('#sw-secondary'), 'Reset');
+});
+
+suite('stopwatch: laps, fastest and slowest, reset', async p => {
+  await openTool(p, 'stopwatch');
+  await p.click('#sw-primary');
+  await p.clock.runFor(1000); await p.click('#sw-secondary');
+  await p.clock.runFor(3000); await p.click('#sw-secondary');
+  await p.clock.runFor(500); await p.click('#sw-secondary');
+  await p.clock.runFor(250);
+  await p.click('#sw-primary');
+  assert.deepStrictEqual(await laps(p), [
+    { text: 'Lap 4 00:00.25', cls: '' },
+    { text: 'Lap 3 00:00.50', cls: 'lap-fastest' },
+    { text: 'Lap 2 00:03.00', cls: 'lap-slowest' },
+    { text: 'Lap 1 00:01.00', cls: '' },
+  ]);
+  assert.strictEqual(await p.textContent('#sw-time'), '00:04.75');
+  await shot(p, 'stopwatch-laps');
+  await p.click('#sw-secondary'); // Reset
+  assert.strictEqual(await p.textContent('#sw-time'), '00:00.00');
+  assert.deepStrictEqual(await laps(p), []);
+  assert.ok(await p.isDisabled('#sw-secondary'));
+});
+
+suite('stopwatch: keeps running while on another tool', async p => {
+  await openTool(p, 'stopwatch');
+  await p.click('#sw-primary');
+  await openTool(p, 'calculator');
+  await p.clock.runFor(3000);
+  await openTool(p, 'stopwatch');
+  assert.strictEqual(await p.textContent('#sw-time'), '00:03.00');
+});
+
+suite('stopwatch: survives closing the app', async p => {
+  await openTool(p, 'stopwatch');
+  await p.click('#sw-primary');
+  await p.clock.runFor(2000);
+  await p.click('#sw-primary');
+  await p.reload();
+  assert.strictEqual(await p.textContent('#tool-title'), 'Stopwatch', 'reopens on the last tool');
+  assert.strictEqual(await p.textContent('#sw-time'), '00:02.00');
+  assert.strictEqual(await p.textContent('#sw-secondary'), 'Reset');
+  await p.click('#sw-primary');
+  await p.reload();
+  assert.strictEqual(await p.textContent('#sw-primary'), 'Stop', 'still running after reload');
+});
+
+suite('stopwatch: keyboard (space, L, R)', async p => {
+  await openTool(p, 'stopwatch');
+  await p.evaluate(() => document.activeElement.blur());
+  await p.keyboard.press('Space');
+  await p.clock.runFor(1000);
+  await p.keyboard.press('l');
+  await p.keyboard.press('Space');
+  assert.strictEqual((await laps(p)).length, 2);
+  await p.keyboard.press('r');
+  assert.strictEqual(await p.textContent('#sw-time'), '00:00.00');
+});
+
+for (const id of ['classic', 'pixel']) {
+  suite(`stopwatch (${id}): hour-long times fit, layout`, async p => {
+    await p.evaluate(() => localStorage.setItem('stopwatch',
+      JSON.stringify({ running: false, banked: 3_723_450, splits: [1_000_000, 2_500_000] })));
+    await p.reload();
+    await setTheme(p, id);
+    await openTool(p, 'stopwatch');
+    assert.strictEqual(await p.textContent('#sw-time'), '1:02:03.45');
+    assert.ok(await p.evaluate(() => {
+      const t = document.getElementById('sw-time');
+      return t.scrollWidth <= t.parentElement.clientWidth;
+    }), 'long time fits');
+    await noHorizontalScroll(p);
+    await fitsInViewport(p, '#sw-primary');
+    await shot(p, `stopwatch-${id}`);
+    await p.setViewportSize({ width: 320, height: 568 });
+    await noHorizontalScroll(p);
+    await fitsInViewport(p, '#sw-primary');
+  });
+}
+
 // ---- Runner ---------------------------------------------------------------------
 (async () => {
   const server = await serve();
@@ -132,8 +232,9 @@ suite('calculator: fits a short phone screen', async p => {
     const errors = [];
     p.on('pageerror', e => errors.push(e.message));
     try {
-      await p.clock?.install?.();
+      await p.clock.install({ time: T0 });
       await p.goto(url);
+      await p.clock.pauseAt(new Date(T0.getTime() + 1000));
       await fn(p);
       assert.deepStrictEqual(errors, [], 'page errors');
       console.log(`✓ ${name}`);
