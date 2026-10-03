@@ -4,6 +4,8 @@ A collection of small, mobile-first tools in one installable web app (plain
 HTML/CSS/JS, no build step). Runs in any phone browser, can be added to the home
 screen, and works offline.
 
+**Live demo:** https://lainepittman.github.io/Pocket-Tools/
+
 ## Tools
 - **Calculator**: add, subtract, multiply, divide, percent, +/−, repeated `=`,
   thousands separators, keyboard support
@@ -42,8 +44,13 @@ big readouts marked `data-figlet` to be drawn as ASCII art (`figlet: true`, see 
 python3 -m http.server 8000
 # open http://localhost:8000 (or http://<your-computer-ip>:8000 from your phone)
 ```
-To install it on a phone, host the folder on any static host (e.g. GitHub Pages),
-open it in the browser, and choose **Add to Home Screen**.
+To install it on a phone, open the live demo (or any static host serving this folder)
+and choose **Add to Home Screen**.
+
+## Deploy
+`.github/workflows/pages.yml` runs the unit tests and publishes the app to GitHub Pages
+on every push to the default branch (or by hand from the Actions tab). It needs
+**Settings > Pages > Source: GitHub Actions** turned on once.
 
 ## Tests
 ```sh
