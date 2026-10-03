@@ -1,0 +1,55 @@
+# Publishes the app to GitHub Pages (https://lainepittman.github.io/Pocket-Tools/).
+# Only the files the app needs are uploaded; tests, scripts and package files stay out.
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [claude/mobile-calculator-app-zfik5g]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Unit tests
+        run: node test.js
+      - name: Collect site files
+        run: |
+          mkdir _site
+          cp index.html style.css themes.js app.js sw.js manifest.webmanifest _site/
+          cp -r lib tools icons fonts _site/
+          # Every file the service worker caches must be published, or install fails offline.
+          node -e "
+            const fs = require('fs');
+            const src = fs.readFileSync('sw.js', 'utf8');
+            const list = src.slice(src.indexOf('['), src.indexOf('];') + 1);
+            const missing = eval(list).filter(f => f !== './' && !fs.existsSync('_site/' + f));
+            if (missing.length) { console.error('Missing from _site:', missing); process.exit(1); }
+          "
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

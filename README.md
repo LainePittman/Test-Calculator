@@ -42,8 +42,14 @@ big readouts marked `data-figlet` to be drawn as ASCII art (`figlet: true`, see 
 python3 -m http.server 8000
 # open http://localhost:8000 (or http://<your-computer-ip>:8000 from your phone)
 ```
-To install it on a phone, host the folder on any static host (e.g. GitHub Pages),
-open it in the browser, and choose **Add to Home Screen**.
+To install it on a phone, open it in the browser and choose **Add to Home Screen**.
+
+## Live demo
+https://lainepittman.github.io/Pocket-Tools/
+
+`.github/workflows/pages.yml` runs the unit tests and publishes the app files to GitHub
+Pages on every push to `claude/mobile-calculator-app-zfik5g` (or from the Actions tab).
+All paths are relative, so it works under the `/Pocket-Tools/` subpath unchanged.
 
 ## Tests
 ```sh
